@@ -1,12 +1,12 @@
+import FundLineChart from "../components/FundLineChart/FundLineChart";
+
 
 function HomeScreen() {
-
-
-    return (
-        <>
-            <h1>HomeScreen</h1>
-        </>
-    )
+	return (
+		<div style={{ display: "flex", flexDirection: "row" }}>
+			<FundLineChart code={"AAK"}></FundLineChart>
+    	</div>
+  	);
 }
 
 export default HomeScreen;
