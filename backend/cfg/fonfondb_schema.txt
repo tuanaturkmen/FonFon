@@ -6,10 +6,16 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE fund_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) UNIQUE NOT NULL
+);	
+
 CREATE TABLE funds (
     id SERIAL PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,      
-    name VARCHAR(255) NOT NULL,                  
+    name VARCHAR(255) NOT NULL,     
+    type_id INTEGER REFERENCES fund_types(id),             
     created_at TIMESTAMP DEFAULT now()
 );
 
