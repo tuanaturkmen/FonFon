@@ -1,12 +1,66 @@
-import FundLineChart from "../components/FundLineChart/FundLineChart";
+import React from "react";
+import { createTheme, ThemeProvider, CssBaseline, Box } from "@mui/material";
+import Header from "../components/Header";
+import FundTable from "../components/FundTable";
 
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    background: {
+      default: "#0B1120",
+      paper: "#111827",
+    },
+    text: {
+      primary: "#FFFFFF",
+      secondary: "#9CA3AF",
+    },
+    success: { main: "#10B981" },
+    error: { main: "#EF4444" },
+    info: { main: "#10B981" },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+  },
+  components: {
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderBottom: "1px solid #1F2937",
+          paddingTop: "16px",
+          paddingBottom: "16px",
+        },
+        head: {
+          color: "#9CA3AF",
+          fontSize: "0.75rem",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          fontWeight: 600,
+          borderBottom: "none",
+        },
+      },
+    },
+    MuiPaginationItem: {
+      styleOverrides: {
+        root: {
+          color: "#9CA3AF",
+          "&.Mui-selected": {
+            backgroundColor: "#10B981",
+            color: "white",
+          },
+        },
+      },
+    },
+  },
+});
 
-function HomeScreen() {
-	return (
-		<div style={{ display: "flex", flexDirection: "row" }}>
-			<FundLineChart code={"AAK"}></FundLineChart>
-    	</div>
-  	);
+export default function App() {
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <Header />
+      <Box sx={{ marginTop: 4 }}>
+        <FundTable />
+      </Box>
+    </ThemeProvider>
+  );
 }
-
-export default HomeScreen;
