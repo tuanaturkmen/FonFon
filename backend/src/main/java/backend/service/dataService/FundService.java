@@ -52,6 +52,37 @@ public class FundService {
 		return response;
 	}
 
+	public List<FundForUI> getFundForUIByCodeAndDateRange(String code, LocalDate startDate, LocalDate endDate) {
+		// 1. Find the fund by code
+		Fund fund = fundRepository.findByCode(code)
+				.orElseThrow(() -> new IllegalArgumentException("Fund not found with code: " + code));
+
+		// 2. Get price history for that fund in the range
+		List<FundPrice> prices = fundPriceRepository.findByFundAndDateBetweenOrderByDate(fund, startDate, endDate);
+
+		// 3. Map to FundForUI list
+		List<FundForUI> result = new ArrayList<>();
+		for (FundPrice fp : prices) {
+			FundForUI dto = new FundForUI();
+
+			dto.setCode(fund.getCode());
+			dto.setName(fund.getName());
+			if (fund.getType() != null) {
+				dto.setType(fund.getType().getName());
+			}
+
+			dto.setDate(fp.getDate());
+			dto.setPrice(fp.getPrice());
+			dto.setCirculatingUnits(fp.getCirculatingUnits());
+			dto.setInvestorCount(fp.getInvestorCount());
+			dto.setTotalValue(fp.getTotalValue());
+
+			result.add(dto);
+		}
+
+		return result;
+	}
+
 	public List<FundForUI> getFundsForUIByDateRange(LocalDate startDate, LocalDate endDate) {
 		List<FundPrice> prices = fundPriceRepository.findByDateRangeWithFund(startDate, endDate);
 		List<FundForUI> result = new ArrayList<>();

@@ -21,4 +21,6 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 			@Param("endDate") LocalDate endDate);
 
 	boolean existsByFundAndDate(Fund fund, LocalDate date);
+
+	List<FundPrice> findByFundAndDateBetweenOrderByDate(Fund fund, LocalDate startDate, LocalDate endDate);
 }
