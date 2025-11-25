@@ -1,11 +1,14 @@
 package backend.service.dataService;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import backend.frontendModels.FundForUI;
 import backend.service.dataService.entity.Fund;
 import backend.service.dataService.entity.FundPrice;
 import backend.service.dataService.repository.FundPriceRepository;
@@ -48,31 +51,31 @@ public class FundService {
 
 		return response;
 	}
-	
-	  public List<FundForUI> getFundsForUIByDateRange(LocalDate startDate, LocalDate endDate) {
-	        List<FundPrice> prices = fundPriceRepository.findByDateRangeWithFund(startDate, endDate);
-	        List<FundForUI> result = new ArrayList<>();
 
-	        for (FundPrice fp : prices) {
-	            Fund fund = fp.getFund();
+	public List<FundForUI> getFundsForUIByDateRange(LocalDate startDate, LocalDate endDate) {
+		List<FundPrice> prices = fundPriceRepository.findByDateRangeWithFund(startDate, endDate);
+		List<FundForUI> result = new ArrayList<>();
 
-	            FundForUI dto = new FundForUI();
-	            dto.setCode(fund.getCode());
-	            dto.setName(fund.getName());
+		for (FundPrice fp : prices) {
+			Fund fund = fp.getFund();
 
-	            if (fund.getType() != null) {
-	                dto.setType(fund.getType().getName());
-	            }
+			FundForUI dto = new FundForUI();
+			dto.setCode(fund.getCode());
+			dto.setName(fund.getName());
 
-	            dto.setDate(fp.getDate());
-	            dto.setPrice(fp.getPrice());
-	            dto.setCirculatingUnits(fp.getCirculatingUnits());
-	            dto.setInvestorCount(fp.getInvestorCount());
-	            dto.setTotalValue(fp.getTotalValue());
+			if (fund.getType() != null) {
+				dto.setType(fund.getType().getName());
+			}
 
-	            result.add(dto);
-	        }
+			dto.setDate(fp.getDate());
+			dto.setPrice(fp.getPrice());
+			dto.setCirculatingUnits(fp.getCirculatingUnits());
+			dto.setInvestorCount(fp.getInvestorCount());
+			dto.setTotalValue(fp.getTotalValue());
 
-	        return result;
-	    }
+			result.add(dto);
+		}
+
+		return result;
+	}
 }
