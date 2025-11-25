@@ -1,0 +1,51 @@
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE fund_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) UNIQUE NOT NULL
+);	
+
+CREATE TABLE funds (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,      
+    name VARCHAR(255) NOT NULL,     
+    type_id INTEGER REFERENCES fund_types(id),             
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE fund_price_history (
+    id SERIAL PRIMARY KEY,
+    fund_id INTEGER REFERENCES funds(id) ON DELETE CASCADE, 
+    date DATE NOT NULL,                                      
+    price DECIMAL(18,6) NOT NULL,                            
+    circulating_units DECIMAL(18,2),                         
+    investor_count INTEGER,                                  
+    total_value DECIMAL(18,2),                            
+    created_at TIMESTAMP DEFAULT now(),
+    UNIQUE (fund_id, date)
+);
+
+CREATE INDEX index_fund_date ON fund_price_history(fund_id, date);
+
+CREATE TABLE portfolios (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE portfolio_funds (
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER REFERENCES portfolios(id) ON DELETE CASCADE,
+    fund_id INTEGER REFERENCES funds(id) ON DELETE CASCADE,
+    allocation_percent DECIMAL(5,2),
+	owned_units DECIMAL(18,4),
+    created_at TIMESTAMP DEFAULT now(),
+    UNIQUE (portfolio_id, fund_id)
+);
