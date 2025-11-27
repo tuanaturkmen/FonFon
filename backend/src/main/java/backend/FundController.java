@@ -1,5 +1,6 @@
 package backend;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class FundController {
 		return ResponseEntity.ok(funds);
 	}
 
+	// GET /api/funds/history?startDate=2025-10-17&endDate=2025-10-19
 	@GetMapping("/funds/history")
 	public ResponseEntity<List<FundForUI>> getFundsByDateRange(
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -38,11 +40,31 @@ public class FundController {
 	}
 
 	@GetMapping("/funds/{code}/history")
-	public ResponseEntity<List<FundForUI>> getFundHistoryByCodeAndDateRange(@PathVariable("code") String code,
+	public ResponseEntity<List<FundForUI>> getFundHistoryByCode(@PathVariable("code") String code,
+			@RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+			@RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+		List<FundForUI> funds = fundService.getFundForUIByCodeAndOptionalDateRange(code, startDate, endDate);
+
+		return ResponseEntity.ok(funds);
+	}
+
+	// GET /api/funds/latest-by-price?minPrice=1.5&maxPrice=3.2
+	@GetMapping("/funds/latest-by-price")
+	public ResponseEntity<List<FundForUI>> getFundsByLatestPriceInRange(@RequestParam("minPrice") BigDecimal minPrice,
+			@RequestParam("maxPrice") BigDecimal maxPrice) {
+
+		List<FundForUI> funds = fundService.getFundsByLatestPriceInRange(minPrice, maxPrice);
+		return ResponseEntity.ok(funds);
+	}
+
+	// GET /api/funds/top-changers?startDate=2025-10-17&endDate=2025-10-19
+	@GetMapping("/funds/top-changers")
+	public ResponseEntity<List<FundForUI>> getTopChangers(
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-		List<FundForUI> funds = fundService.getFundForUIByCodeAndDateRange(code, startDate, endDate);
+		List<FundForUI> funds = fundService.getTop5FundsByChange(startDate, endDate);
 		return ResponseEntity.ok(funds);
 	}
 }

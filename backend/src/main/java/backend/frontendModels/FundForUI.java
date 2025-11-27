@@ -2,7 +2,8 @@ package backend.frontendModels;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import lombok.Data; 
+
+import lombok.Data;
 
 @Data
 public class FundForUI {
@@ -15,4 +16,5 @@ public class FundForUI {
 	private BigDecimal circulatingUnits;
 	private Integer investorCount;
 	private BigDecimal totalValue;
+	private BigDecimal change;
 }

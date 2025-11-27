@@ -23,4 +23,22 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 	boolean existsByFundAndDate(Fund fund, LocalDate date);
 
 	List<FundPrice> findByFundAndDateBetweenOrderByDate(Fund fund, LocalDate startDate, LocalDate endDate);
+
+	List<FundPrice> findByFundOrderByDate(Fund fund);
+
+	Optional<FundPrice> findFirstByFundAndDateBetweenOrderByDateAsc(Fund fund, LocalDate startDate, LocalDate endDate);
+
+	Optional<FundPrice> findFirstByFundAndDateBetweenOrderByDateDesc(Fund fund, LocalDate startDate, LocalDate endDate);
+
+	/**
+	 * Funds that have a price on BOTH startDate and endDate. We only want funds
+	 * that are present on both boundary days.
+	 */
+	@Query("SELECT f FROM Fund f " + "WHERE EXISTS (" + "   SELECT 1 FROM FundPrice fp1 "
+			+ "   WHERE fp1.fund = f AND fp1.date = :startDate" + ") " + "AND EXISTS ("
+			+ "   SELECT 1 FROM FundPrice fp2 " + "   WHERE fp2.fund = f AND fp2.date = :endDate" + ")")
+	List<Fund> findFundsWithPricesOnBothDates(@Param("startDate") LocalDate startDate,
+			@Param("endDate") LocalDate endDate);
+
+	Optional<FundPrice> findByFundAndDate(Fund fund, LocalDate date);
 }
