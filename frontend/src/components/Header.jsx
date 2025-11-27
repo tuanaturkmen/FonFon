@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -11,6 +11,8 @@ import {
 import DonutSmallIcon from "@mui/icons-material/DonutSmall";
 
 export default function Header() {
+  const [tab, setTab] = useState(0);
+
   return (
     <AppBar
       position="static"
@@ -41,40 +43,51 @@ export default function Header() {
         >
           <Button
             sx={{
-              color: "#10B981",
+              color: tab == 0 ? "#10B981" : "#9CA3AF",
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
+            }}
+            onClick={() => {
+              setTab(0);
             }}
           >
             Funds
           </Button>
           <Button
             sx={{
-              color: "#9CA3AF",
+              color: tab == 1 ? "#10B981" : "#9CA3AF",
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
+            }}
+            onClick={() => {
+              setTab(1);
             }}
           >
             Dashboard
           </Button>
           <Button
             sx={{
-              color: "#9CA3AF",
+              color: tab == 2 ? "#10B981" : "#9CA3AF",
               textTransform: "none",
               fontSize: "1rem",
-              fontWeight: 600,
+            }}
+            onClick={() => {
+              setTab(2);
             }}
           >
             My Portfolio
           </Button>
           <Button
             sx={{
-              color: "#9CA3AF",
+              color: tab == 3 ? "#10B981" : "#9CA3AF",
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
+            }}
+            onClick={() => {
+              setTab(3);
             }}
           >
             Settings

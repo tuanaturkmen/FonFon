@@ -1,13 +1,23 @@
 import axios from "axios";
 
+const BASE_URL = "http://localhost:8080/api";
+
 export const getAllFunds = async () => {
-  const res = await axios.get("http://192.168.111.15:8080/api/funds");
+  const res = await axios.get(`${BASE_URL}/funds`);
   return res.data;
 };
 
 export const getFundHistory = async (code) => {
-  const res = await axios.get(
-    `http://192.168.111.15:8080/api/funds/${code}/history`
-  );
+  const res = await axios.get(`${BASE_URL}/funds/${code}/history`);
+  return res.data;
+};
+
+export const getTopFunds = async () => {
+  const res = await axios.get(`${BASE_URL}/funds/top-changers`, {
+    params: {
+      startDate: "2025-10-17",
+      endDate: "2025-10-19",
+    },
+  });
   return res.data;
 };

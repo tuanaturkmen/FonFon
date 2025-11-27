@@ -2,6 +2,7 @@ import React from "react";
 import { createTheme, ThemeProvider, CssBaseline, Box } from "@mui/material";
 import Header from "../components/Header";
 import FundTable from "../components/FundTable";
+import TopFundsCards from "../components/TopFundsCard";
 
 const darkTheme = createTheme({
   palette: {
@@ -26,7 +27,7 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           borderBottom: "1px solid #1F2937",
-          paddingTop: "16px",
+          paddingTop: "12px",
           paddingBottom: "16px",
         },
         head: {
@@ -58,7 +59,9 @@ export default function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Header />
-      <Box sx={{ marginTop: 4 }}>
+
+      <Box sx={{ marginTop: 1 }}>
+        <TopFundsCards />
         <FundTable />
       </Box>
     </ThemeProvider>
