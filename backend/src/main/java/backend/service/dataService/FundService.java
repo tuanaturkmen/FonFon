@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import backend.frontendModels.FundForUI;
+import backend.frontendModels.RequestModels.FundSearchRequest;
 import backend.service.dataService.entity.Fund;
 import backend.service.dataService.entity.FundPrice;
 import backend.service.dataService.repository.FundPriceRepository;
@@ -228,6 +229,10 @@ public class FundService {
 		} else {
 			return candidates;
 		}
+	}
+
+	public List<FundForUI> search(FundSearchRequest request) {
+		return null;
 	}
 
 }

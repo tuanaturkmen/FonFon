@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import backend.frontendModels.FundForUI;
+import backend.frontendModels.RequestModels.FundSearchRequest;
 import backend.service.dataService.FundService;
 
 @RestController
@@ -65,6 +66,12 @@ public class FundController {
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
 		List<FundForUI> funds = fundService.getTop5FundsByChange(startDate, endDate);
+		return ResponseEntity.ok(funds);
+	}
+
+	@GetMapping("/funds/search")
+	public ResponseEntity<List<FundForUI>> searchFunds(FundSearchRequest request) {
+		List<FundForUI> funds = fundService.search(request);
 		return ResponseEntity.ok(funds);
 	}
 }

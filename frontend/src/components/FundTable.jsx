@@ -16,10 +16,14 @@ import {
   Checkbox,
   Button,
   TableSortLabel,
+  TextField,
+  Collapse,
+  Grid,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import { getAllFunds } from "../services/FundService";
 import FundDetailDrawer from "./FundDetailDrawer";
 import CompareFundsDrawer from "./CompareFundsDrawer";
@@ -52,12 +56,39 @@ function stableSort(array, comparator) {
   return stabilizedThis.map((el) => el[0]);
 }
 
+const inputStyle = {
+  "& .MuiOutlinedInput-root": {
+    color: "white",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    "& fieldset": { borderColor: "#4B5563" },
+    "&:hover fieldset": { borderColor: "#9CA3AF" },
+    "&.Mui-focused fieldset": { borderColor: "#10B981" },
+  },
+  "& .MuiInputLabel-root": { color: "#9CA3AF" },
+  "& .MuiInputBase-input": { padding: "8px 14px" },
+};
+
 export default function FundTable() {
+  const [allFunds, setAllFunds] = useState([]);
   const [data, setData] = useState([]);
+
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState([]);
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("name");
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterValues, setFilterValues] = useState({
+    name: "",
+    minPrice: "",
+    maxPrice: "",
+    minValue: "",
+    maxValue: "",
+    minUnits: "",
+    maxUnits: "",
+    minInvestors: "",
+    maxInvestors: "",
+  });
 
   const rowsPerPage = 5;
   const MAX_SELECTION = 5;
@@ -67,19 +98,76 @@ export default function FundTable() {
   const [isCompareDrawerOpen, setIsCompareDrawerOpen] = useState(false);
 
   useEffect(() => {
-    async function fetchData() {
-      const res = await getAllFunds();
-      if (res) {
-        setData(res);
-      }
-    }
-    fetchData();
+    loadInitialData();
   }, []);
+
+  const loadInitialData = async () => {
+    const res = await getAllFunds();
+    if (res) {
+      setAllFunds(res);
+      setData(res);
+    }
+  };
 
   const sortedData = useMemo(
     () => stableSort(data, getComparator(order, orderBy)),
     [data, order, orderBy]
   );
+
+  const handleToggleFilters = () => setShowFilters((prev) => !prev);
+  const handleFilterChange = (prop) => (event) =>
+    setFilterValues({ ...filterValues, [prop]: event.target.value });
+
+  const handleApplyFilters = () => {
+    setPage(1);
+
+    let filtered = [...allFunds];
+
+    if (filterValues.name) {
+      const term = filterValues.name.toLowerCase();
+      filtered = filtered.filter(
+        (f) =>
+          f.name.toLowerCase().includes(term) ||
+          f.code.toLowerCase().includes(term)
+      );
+    }
+
+    const filterRange = (field, min, max) => {
+      if (min) filtered = filtered.filter((f) => f[field] >= parseFloat(min));
+      if (max) filtered = filtered.filter((f) => f[field] <= parseFloat(max));
+    };
+
+    filterRange("price", filterValues.minPrice, filterValues.maxPrice);
+    filterRange("totalValue", filterValues.minValue, filterValues.maxValue);
+    filterRange(
+      "circulatingUnits",
+      filterValues.minUnits,
+      filterValues.maxUnits
+    );
+    filterRange(
+      "investorCount",
+      filterValues.minInvestors,
+      filterValues.maxInvestors
+    );
+
+    setData(filtered);
+  };
+
+  const handleClearFilters = () => {
+    setFilterValues({
+      name: "",
+      minPrice: "",
+      maxPrice: "",
+      minValue: "",
+      maxValue: "",
+      minUnits: "",
+      maxUnits: "",
+      minInvestors: "",
+      maxInvestors: "",
+    });
+    setPage(1);
+    setData(allFunds);
+  };
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -88,14 +176,11 @@ export default function FundTable() {
     setPage(1);
   };
 
-  const isSelected = (code) => selected.indexOf(code) !== -1;
-
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
       const startIndex = (page - 1) * rowsPerPage;
       const endIndex = startIndex + rowsPerPage;
       const visibleRows = sortedData.slice(startIndex, endIndex);
-
       const availableSlots = MAX_SELECTION - selected.length;
 
       if (availableSlots <= 0) return;
@@ -105,7 +190,6 @@ export default function FundTable() {
         .map((r) => r.code);
 
       const toAdd = candidates.slice(0, availableSlots);
-
       setSelected([...selected, ...toAdd]);
       return;
     }
@@ -117,9 +201,7 @@ export default function FundTable() {
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      if (selected.length >= MAX_SELECTION) {
-        return;
-      }
+      if (selected.length >= MAX_SELECTION) return;
       newSelected = newSelected.concat(selected, code);
     } else {
       if (selectedIndex === 0) {
@@ -136,32 +218,20 @@ export default function FundTable() {
     setSelected(newSelected);
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (event, newPage) => setPage(newPage);
   const handleOpenDrawer = (event, fund) => {
     event.stopPropagation();
     setSelectedFund(fund);
     setIsDrawerOpen(true);
   };
+  const handleCloseDrawer = () => setIsDrawerOpen(false);
+  const handleCompare = () => setIsCompareDrawerOpen(true);
+  const handleCloseCompareDrawer = () => setIsCompareDrawerOpen(false);
 
-  const handleCloseDrawer = () => {
-    setIsDrawerOpen(false);
-  };
+  const getSelectedFundObjects = () =>
+    allFunds.filter((fund) => selected.includes(fund.code));
 
-  const handleCompare = () => {
-    setIsCompareDrawerOpen(true);
-  };
-
-  const handleCloseCompareDrawer = () => {
-    setIsCompareDrawerOpen(false);
-  };
-
-  const getSelectedFundObjects = () => {
-    return data.filter((fund) => selected.includes(fund.code));
-  };
-
+  const isSelected = (code) => selected.indexOf(code) !== -1;
   const formatCurrency = (value) =>
     value
       ? value.toLocaleString("tr-TR", {
@@ -169,15 +239,12 @@ export default function FundTable() {
           maximumFractionDigits: 2,
         })
       : "0,00";
-
   const formatNumber = (value) => (value ? value.toLocaleString("tr-TR") : "0");
 
   const pageCount = Math.ceil(data.length / rowsPerPage);
-
   const startIndex = (page - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const visibleRows = sortedData.slice(startIndex, endIndex);
-
   const numSelectedVisible = visibleRows.filter((r) =>
     selected.includes(r.code)
   ).length;
@@ -188,6 +255,7 @@ export default function FundTable() {
 
   return (
     <Box sx={{ width: "95%", margin: "0 auto", py: 4 }}>
+      {/* HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -200,24 +268,232 @@ export default function FundTable() {
           Available Funds
         </Typography>
 
-        <Button
-          variant="contained"
-          startIcon={<CompareArrowsIcon />}
-          onClick={handleCompare}
-          disabled={selected.length < 2}
-          sx={{
-            backgroundColor: "#34D399",
-            "&:hover": { backgroundColor: "#059669" },
-            "&.Mui-disabled": {
-              backgroundColor: "rgba(255, 255, 255, 0.12)",
-              color: "rgba(255, 255, 255, 0.3)",
-            },
-          }}
-        >
-          Compare
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant={showFilters ? "contained" : "outlined"}
+            startIcon={<FilterListIcon />}
+            onClick={handleToggleFilters}
+            sx={{
+              color: showFilters ? "#1F2937" : "white",
+              borderColor: "rgba(255, 255, 255, 0.23)",
+              backgroundColor: showFilters
+                ? "rgba(255, 255, 255, 0.9)"
+                : "transparent",
+              "&:hover": {
+                borderColor: "white",
+                backgroundColor: showFilters
+                  ? "white"
+                  : "rgba(255, 255, 255, 0.05)",
+              },
+            }}
+          >
+            Filters
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<CompareArrowsIcon />}
+            onClick={handleCompare}
+            disabled={selected.length < 2}
+            sx={{
+              backgroundColor: "#34D399",
+              "&:hover": { backgroundColor: "#059669" },
+              "&.Mui-disabled": {
+                backgroundColor: "rgba(255, 255, 255, 0.12)",
+                color: "rgba(255, 255, 255, 0.3)",
+              },
+            }}
+          >
+            Compare
+          </Button>
+        </Stack>
       </Box>
 
+      {/* 3. LAYOUT FIX: Reorganized Filter Grid */}
+      <Collapse in={showFilters}>
+        <Paper
+          sx={{
+            p: 3,
+            mb: 3,
+            border: "1px solid #374151",
+            borderRadius: 2,
+          }}
+        >
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={6}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "#9CA3AF",
+                  fontWeight: "bold",
+                  mb: 2,
+                  letterSpacing: 1,
+                }}
+              >
+                FINANCIALS
+              </Typography>
+
+              <Stack spacing={1}>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "white", mb: 1, display: "block" }}
+                  >
+                    Price (₺)
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      placeholder="Min"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.minPrice}
+                      onChange={handleFilterChange("minPrice")}
+                      sx={inputStyle}
+                    />
+                    <TextField
+                      placeholder="Max"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.maxPrice}
+                      onChange={handleFilterChange("maxPrice")}
+                      sx={inputStyle}
+                    />
+                  </Stack>
+                </Box>
+
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "white", mb: 1, display: "block" }}
+                  >
+                    Total Value (₺)
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      placeholder="Min"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.minValue}
+                      onChange={handleFilterChange("minValue")}
+                      sx={inputStyle}
+                    />
+                    <TextField
+                      placeholder="Max"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.maxValue}
+                      onChange={handleFilterChange("maxValue")}
+                      sx={inputStyle}
+                    />
+                  </Stack>
+                </Box>
+              </Stack>
+            </Grid>
+
+            <Grid item xs={12} md={6} sx={{ pl: { md: 2 } }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "#9CA3AF",
+                  fontWeight: "bold",
+                  mb: 2,
+                  letterSpacing: 1,
+                }}
+              >
+                MARKET DATA
+              </Typography>
+
+              <Stack spacing={1}>
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "white", mb: 1, display: "block" }}
+                  >
+                    Circulating Units
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      placeholder="Min"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.minUnits}
+                      onChange={handleFilterChange("minUnits")}
+                      sx={inputStyle}
+                    />
+                    <TextField
+                      placeholder="Max"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.maxUnits}
+                      onChange={handleFilterChange("maxUnits")}
+                      sx={inputStyle}
+                    />
+                  </Stack>
+                </Box>
+
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: "white", mb: 1, display: "block" }}
+                  >
+                    Investors
+                  </Typography>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      placeholder="Min"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.minInvestors}
+                      onChange={handleFilterChange("minInvestors")}
+                      sx={inputStyle}
+                    />
+                    <TextField
+                      placeholder="Max"
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={filterValues.maxInvestors}
+                      onChange={handleFilterChange("maxInvestors")}
+                      sx={inputStyle}
+                    />
+                  </Stack>
+                </Box>
+              </Stack>
+            </Grid>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Box display="flex" justifyContent="flex-end" gap={2} pt={1}>
+              <Button
+                onClick={handleClearFilters}
+                sx={{ color: "#9CA3AF", "&:hover": { color: "white" } }}
+              >
+                Clear All
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleApplyFilters}
+                sx={{
+                  px: 4,
+                  backgroundColor: "#10B981",
+                  "&:hover": { backgroundColor: "#059669" },
+                }}
+              >
+                Apply Filters
+              </Button>
+            </Box>
+          </Grid>
+        </Paper>
+      </Collapse>
+
+      {/* TABLE */}
       <TableContainer
         component={Paper}
         sx={{
@@ -340,7 +616,6 @@ export default function FundTable() {
                       {row.date}
                     </Typography>
                   </TableCell>
-
                   <TableCell component="th" scope="row">
                     <Box display="flex" flexDirection="column">
                       <Typography variant="body1" fontWeight={500}>
@@ -355,31 +630,26 @@ export default function FundTable() {
                       </Typography>
                     </Box>
                   </TableCell>
-
                   <TableCell align="right">
                     <Typography variant="body1" fontWeight={500}>
                       {formatCurrency(row.price)} ₺
                     </Typography>
                   </TableCell>
-
                   <TableCell align="right">
                     <Typography variant="body2" color="text.secondary">
                       {formatNumber(row.circulatingUnits)}
                     </Typography>
                   </TableCell>
-
                   <TableCell align="right">
                     <Typography variant="body2" color="text.secondary">
                       {formatNumber(row.investorCount)}
                     </Typography>
                   </TableCell>
-
                   <TableCell align="right">
                     <Typography variant="body1" fontWeight={500}>
                       {formatCurrency(row.totalValue)} ₺
                     </Typography>
                   </TableCell>
-
                   <TableCell align="right">
                     <Link
                       component="button"
@@ -420,13 +690,9 @@ export default function FundTable() {
                   backgroundColor: "success.main",
                   color: "white",
                   fontWeight: "bold",
-                  "&:hover": {
-                    backgroundColor: "#059669",
-                  },
+                  "&:hover": { backgroundColor: "#059669" },
                 },
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.08)",
-                },
+                "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
               }}
             />
           )}
@@ -438,7 +704,6 @@ export default function FundTable() {
         onClose={handleCloseDrawer}
         fund={selectedFund}
       />
-
       <CompareFundsDrawer
         open={isCompareDrawerOpen}
         onClose={handleCloseCompareDrawer}
