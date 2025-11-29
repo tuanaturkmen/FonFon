@@ -1,9 +1,8 @@
 package backend.service.dataService;
 
-import java.io.File;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import backend.common.FundTypeEnum;
@@ -12,7 +11,7 @@ import backend.common.FundTypeEnum;
 public class StartupRunner implements CommandLineRunner {
 
 	@Value("${app.data.import.file-path}")
-	private String excelFilePath;
+	private Resource excelFile;
 
 	private final FundDataImportService importService;
 
@@ -22,9 +21,8 @@ public class StartupRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		File file = new File(excelFilePath); // will need to change during deploy process
 		try {
-			importService.importFundsFromExcel(file, FundTypeEnum.INVESTMENT.getName());
+			importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

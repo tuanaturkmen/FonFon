@@ -1,7 +1,6 @@
 package backend.service.dataService;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.Date;
@@ -13,6 +12,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,9 @@ import backend.service.dataService.repository.FundTypeRepository;
 @Service
 public class FundDataImportService {
 
+	@Value("${app.data.import.file-path}")
+	private Resource excelFile;
+
 	@Autowired
 	private FundRepository fundRepository;
 
@@ -36,13 +40,15 @@ public class FundDataImportService {
 	private FundPriceRepository fundPriceRepository;
 
 	@Transactional
-	public void importFundsFromExcel(File excelFile, String fundTypeName) throws Exception {
+	public void importFundsFromExcel(String fundTypeName) throws Exception {
 		// 1. Find the Fund Type (e.g., "INVESTMENT")
 		FundType type = fundTypeRepository.findByName(fundTypeName)
 				.orElseThrow(() -> new IllegalArgumentException("Fund type not found: " + fundTypeName));
 
-		FileInputStream fis = new FileInputStream(excelFile);
-		Workbook workbook = new XSSFWorkbook(fis);
+		InputStream is = excelFile.getInputStream();
+
+		// Pass 'is' to Apache POI
+		Workbook workbook = new XSSFWorkbook(is);
 		Sheet sheet = workbook.getSheetAt(0);
 
 		for (Row row : sheet) {
@@ -99,7 +105,6 @@ public class FundDataImportService {
 		}
 
 		workbook.close();
-		fis.close();
 	}
 
 	// --- Helper Methods ---
