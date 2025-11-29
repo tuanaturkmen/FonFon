@@ -1,23 +1,26 @@
-# -------- Stage 1: build with Maven --------
+# -------- Stage 1: Build using Maven + JDK 17 --------
 FROM maven:3.9.9-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-# Copy pom and sources
+# Copy everything (pom.xml + src + Lombok + repos)
 COPY pom.xml .
 COPY src ./src
 
-# Build the app (skip tests if you want faster builds)
+# Clean cache to avoid issues
+RUN mvn -B -q dependency:go-offline
+
+# Build with JDK17 inside Docker ONLY
 RUN mvn -B clean package -DskipTests
 
 
-# -------- Stage 2: run with JRE only --------
+# -------- Stage 2: Run with JRE 17 --------
 FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
-# Copy the built jar from the build stage
+# Copy the JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Run the app
+# Run the Spring Boot application
 CMD ["java", "-jar", "app.jar"]
