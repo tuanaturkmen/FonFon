@@ -59,12 +59,11 @@ public class FundController {
 		return ResponseEntity.ok(funds);
 	}
 
-	// GET /api/funds/top-changers?startDate=2025-10-17&endDate=2025-10-19
+	// GET /api/funds/top-changers?startDate=2025-11-17&endDate=2025-11-19
 	@GetMapping("/funds/top-changers")
 	public ResponseEntity<List<FundForUI>> getTopChangers(
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
 		List<FundForUI> funds = fundService.getTop5FundsByChange(startDate, endDate);
 		return ResponseEntity.ok(funds);
 	}

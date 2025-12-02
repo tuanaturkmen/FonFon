@@ -13,6 +13,9 @@ public class StartupRunner implements CommandLineRunner {
 	@Value("${app.data.import.file-path}")
 	private Resource excelFile;
 
+	@Value("${app.data.import.enabled:true}")
+	private boolean importEnabled;
+
 	private final FundDataImportService importService;
 
 	public StartupRunner(FundDataImportService importService) {
@@ -22,7 +25,8 @@ public class StartupRunner implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		try {
-			importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
+			if (importEnabled)
+				importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

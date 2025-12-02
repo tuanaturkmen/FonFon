@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.PriorityQueue;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -158,27 +159,49 @@ public class FundService {
 		return result;
 	}
 
-	/**
-	 * Among the funds that have prices on BOTH startDate and endDate, compute
-	 * percentage change and return top 5 with the largest positive change.
-	 */
+	public List<FundForUI> search(FundSearchRequest request) {
+		return null;
+	}
+
+	private static class FundChangeSnapshot {
+		private final Fund fund;
+		private final FundPrice endPriceRow;
+		private final BigDecimal change;
+
+		public FundChangeSnapshot(Fund fund, FundPrice endPriceRow, BigDecimal change) {
+			this.fund = fund;
+			this.endPriceRow = endPriceRow;
+			this.change = change;
+		}
+
+		public Fund getFund() {
+			return fund;
+		}
+
+		public FundPrice getEndPriceRow() {
+			return endPriceRow;
+		}
+
+		public BigDecimal getChange() {
+			return change;
+		}
+	}
+
 	public List<FundForUI> getTop5FundsByChange(LocalDate startDate, LocalDate endDate) {
 
 		// 1. Only funds that have records on BOTH dates
 		List<Fund> activeFunds = fundPriceRepository.findFundsWithPricesOnBothDates(startDate, endDate);
 
-		List<FundForUI> candidates = new ArrayList<>();
+		// Min-heap: smallest change at the top
+		PriorityQueue<FundChangeSnapshot> best5 = new PriorityQueue<>(5,
+				Comparator.comparing(FundChangeSnapshot::getChange));
 
 		for (Fund fund : activeFunds) {
 
-			// 2. Get price exactly on startDate and endDate
 			Optional<FundPrice> startOpt = fundPriceRepository.findByFundAndDate(fund, startDate);
-
 			Optional<FundPrice> endOpt = fundPriceRepository.findByFundAndDate(fund, endDate);
 
 			if (!startOpt.isPresent() || !endOpt.isPresent()) {
-				// Should not happen because of the query above,
-				// but we keep this as a safety net.
 				continue;
 			}
 
@@ -188,51 +211,56 @@ public class FundService {
 			BigDecimal startPrice = startPriceRow.getPrice();
 			BigDecimal endPrice = endPriceRow.getPrice();
 
-			// Safety checks
 			if (startPrice == null || endPrice == null || startPrice.compareTo(BigDecimal.ZERO) == 0) {
 				continue;
 			}
 
-			// 3. Percentage change: (end - start) / start * 100
 			BigDecimal change = endPrice.subtract(startPrice).divide(startPrice, 6, RoundingMode.HALF_UP)
-					.multiply(BigDecimal.valueOf(100)); // 25.0 = +25%
+					.multiply(BigDecimal.valueOf(100));
 
-			// We only want positive change
+			// Only positive changes
 			if (change.compareTo(BigDecimal.ZERO) <= 0) {
 				continue;
 			}
 
-			// 4. Build DTO using END snapshot (endDate)
+			FundChangeSnapshot snapshot = new FundChangeSnapshot(fund, endPriceRow, change);
+
+			if (best5.size() < 5) {
+				best5.offer(snapshot);
+			} else if (change.compareTo(best5.peek().getChange()) > 0) {
+				// Current change is better than the smallest in heap
+				best5.poll();
+				best5.offer(snapshot);
+			}
+		}
+
+		// Now best5 contains at most 5 snapshots, but in ascending order
+		List<FundChangeSnapshot> topList = new ArrayList<>(best5);
+		topList.sort(Comparator.comparing(FundChangeSnapshot::getChange).reversed());
+
+		// Map to DTOs
+		List<FundForUI> result = new ArrayList<>();
+		for (FundChangeSnapshot snap : topList) {
+			Fund fund = snap.getFund();
+			FundPrice endPriceRow = snap.getEndPriceRow();
+
 			FundForUI dto = new FundForUI();
 			dto.setCode(fund.getCode());
 			dto.setName(fund.getName());
 			if (fund.getType() != null) {
 				dto.setType(fund.getType().getName());
 			}
-
 			dto.setDate(endPriceRow.getDate());
 			dto.setPrice(endPriceRow.getPrice());
 			dto.setCirculatingUnits(endPriceRow.getCirculatingUnits());
 			dto.setInvestorCount(endPriceRow.getInvestorCount());
 			dto.setTotalValue(endPriceRow.getTotalValue());
+			dto.setChange(snap.getChange());
 
-			dto.setChange(change);
-
-			candidates.add(dto);
+			result.add(dto);
 		}
 
-		// 5. Sort by change descending and return top 5
-		candidates.sort(Comparator.comparing(FundForUI::getChange).reversed());
-
-		if (candidates.size() > 5) {
-			return candidates.subList(0, 5);
-		} else {
-			return candidates;
-		}
-	}
-
-	public List<FundForUI> search(FundSearchRequest request) {
-		return null;
+		return result;
 	}
 
 }
