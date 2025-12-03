@@ -1,5 +1,6 @@
 package backend.service.dataService.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +29,6 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 
 	Optional<FundPrice> findFirstByFundAndDateBetweenOrderByDateAsc(Fund fund, LocalDate startDate, LocalDate endDate);
 
-	Optional<FundPrice> findFirstByFundAndDateBetweenOrderByDateDesc(Fund fund, LocalDate startDate, LocalDate endDate);
-
 	/**
 	 * Funds that have a price on BOTH startDate and endDate. We only want funds
 	 * that are present on both boundary days.
@@ -41,4 +40,28 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 			@Param("endDate") LocalDate endDate);
 
 	Optional<FundPrice> findByFundAndDate(Fund fund, LocalDate date);
+
+	@Query("""
+			SELECT fp
+			FROM FundPrice fp
+			WHERE fp.date = (
+			    SELECT MAX(fp2.date)
+			    FROM FundPrice fp2
+			    WHERE fp2.fund = fp.fund
+			)
+			""")
+	List<FundPrice> findLatestPriceForAllFunds();
+
+	@Query("""
+			SELECT fp
+			FROM FundPrice fp
+			WHERE fp.date = (
+			    SELECT MAX(fp2.date)
+			    FROM FundPrice fp2
+			    WHERE fp2.fund = fp.fund
+			)
+			AND fp.price BETWEEN :minPrice AND :maxPrice
+			""")
+	List<FundPrice> findLatestPriceInRange(@Param("minPrice") BigDecimal minPrice,
+			@Param("maxPrice") BigDecimal maxPrice);
 }

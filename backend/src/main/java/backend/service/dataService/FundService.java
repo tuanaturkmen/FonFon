@@ -5,7 +5,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.PriorityQueue;
 
@@ -24,45 +26,70 @@ public class FundService {
 
 	@Autowired
 	private FundRepository fundRepository;
+
 	@Autowired
 	private FundPriceRepository fundPriceRepository;
 
+	// ---------- Helper mapping ----------
+
+	private FundForUI toDto(Fund fund, FundPrice fp) {
+		FundForUI dto = new FundForUI();
+		dto.setCode(fund.getCode());
+		dto.setName(fund.getName());
+
+		if (fund.getType() != null) {
+			dto.setType(fund.getType().getName());
+		}
+
+		if (fp != null) {
+			dto.setDate(fp.getDate());
+			dto.setPrice(fp.getPrice());
+			dto.setCirculatingUnits(fp.getCirculatingUnits());
+			dto.setInvestorCount(fp.getInvestorCount());
+			dto.setTotalValue(fp.getTotalValue());
+		}
+
+		return dto;
+	}
+
+	// ---------- 1) All funds with their LATEST price (optimized) ----------
+
 	public List<FundForUI> getAllFundsForUI() {
+		// One query for all funds
 		List<Fund> funds = fundRepository.findAll();
-		List<FundForUI> response = new ArrayList<>();
+
+		// One query for all latest prices (no N+1)
+		List<FundPrice> latestPrices = fundPriceRepository.findLatestPriceForAllFunds();
+
+		// Map: fundId -> latest price
+		Map<Long, FundPrice> latestByFundId = new HashMap<>();
+		for (FundPrice fp : latestPrices) {
+			Fund fund = fp.getFund();
+			if (fund != null && fund.getId() != null) {
+				latestByFundId.put(fund.getId(), fp);
+			}
+		}
+
+		List<FundForUI> response = new ArrayList<>(funds.size());
 
 		for (Fund fund : funds) {
-			Optional<FundPrice> latestPriceOpt = fundPriceRepository.findFirstByFundOrderByDateDesc(fund);
-
-			FundForUI dto = new FundForUI();
-			dto.setCode(fund.getCode());
-			dto.setName(fund.getName());
-
-			// assuming Fund has getType() -> FundType and FundType has getName()
-			if (fund.getType() != null) {
-				dto.setType(fund.getType().getName());
+			FundPrice latest = null;
+			if (fund.getId() != null) {
+				latest = latestByFundId.get(fund.getId());
 			}
-
-			latestPriceOpt.ifPresent(fp -> {
-				dto.setDate(fp.getDate());
-				dto.setPrice(fp.getPrice());
-				dto.setCirculatingUnits(fp.getCirculatingUnits());
-				dto.setInvestorCount(fp.getInvestorCount());
-				dto.setTotalValue(fp.getTotalValue());
-			});
-
-			response.add(dto);
+			response.add(toDto(fund, latest));
 		}
 
 		return response;
 	}
 
+	// ---------- 2) Single fund with history (code + optional date range)
+	// ----------
+
 	public List<FundForUI> getFundForUIByCodeAndOptionalDateRange(String code, LocalDate startDate, LocalDate endDate) {
-		// 1. Find fund by code
 		Fund fund = fundRepository.findByCode(code)
 				.orElseThrow(() -> new IllegalArgumentException("Fund not found with code: " + code));
 
-		// 2. Decide which repo method to call
 		List<FundPrice> prices;
 		if (startDate != null && endDate != null) {
 			prices = fundPriceRepository.findByFundAndDateBetweenOrderByDate(fund, startDate, endDate);
@@ -70,98 +97,58 @@ public class FundService {
 			prices = fundPriceRepository.findByFundOrderByDate(fund);
 		}
 
-		// 3. Map to DTOs
-		List<FundForUI> result = new ArrayList<>();
+		List<FundForUI> result = new ArrayList<>(prices.size());
+
 		for (FundPrice fp : prices) {
-			FundForUI dto = new FundForUI();
-
-			dto.setCode(fund.getCode());
-			dto.setName(fund.getName());
-			if (fund.getType() != null) {
-				dto.setType(fund.getType().getName());
-			}
-
-			dto.setDate(fp.getDate());
-			dto.setPrice(fp.getPrice());
-			dto.setCirculatingUnits(fp.getCirculatingUnits());
-			dto.setInvestorCount(fp.getInvestorCount());
-			dto.setTotalValue(fp.getTotalValue());
-
-			result.add(dto);
+			result.add(toDto(fund, fp));
 		}
 
 		return result;
 	}
 
+	// ---------- 3) All funds in a date range (you already had a good query)
+	// ----------
+
 	public List<FundForUI> getFundsForUIByDateRange(LocalDate startDate, LocalDate endDate) {
+		// Assumes this query already does JOIN FETCH fund and type
 		List<FundPrice> prices = fundPriceRepository.findByDateRangeWithFund(startDate, endDate);
-		List<FundForUI> result = new ArrayList<>();
+		List<FundForUI> result = new ArrayList<>(prices.size());
 
 		for (FundPrice fp : prices) {
 			Fund fund = fp.getFund();
-
-			FundForUI dto = new FundForUI();
-			dto.setCode(fund.getCode());
-			dto.setName(fund.getName());
-
-			if (fund.getType() != null) {
-				dto.setType(fund.getType().getName());
-			}
-
-			dto.setDate(fp.getDate());
-			dto.setPrice(fp.getPrice());
-			dto.setCirculatingUnits(fp.getCirculatingUnits());
-			dto.setInvestorCount(fp.getInvestorCount());
-			dto.setTotalValue(fp.getTotalValue());
-
-			result.add(dto);
+			result.add(toDto(fund, fp));
 		}
 
 		return result;
 	}
+
+	// ---------- 4) Funds whose LATEST price is in [minPrice, maxPrice] (optimized)
+	// ----------
 
 	public List<FundForUI> getFundsByLatestPriceInRange(BigDecimal minPrice, BigDecimal maxPrice) {
 
-		List<Fund> allFunds = fundRepository.findAll();
-		List<FundForUI> result = new ArrayList<>();
+		// Instead of: findAll funds + query latest for each fund (N+1),
+		// we query directly for the latest FundPrice rows in range.
+		List<FundPrice> latestInRange = fundPriceRepository.findLatestPriceInRange(minPrice, maxPrice);
 
-		for (Fund fund : allFunds) {
+		List<FundForUI> result = new ArrayList<>(latestInRange.size());
 
-			Optional<FundPrice> latestPriceOpt = fundPriceRepository.findFirstByFundOrderByDateDesc(fund);
-
-			if (!latestPriceOpt.isPresent()) {
-				continue; // fund has no price history
-			}
-
-			FundPrice latest = latestPriceOpt.get();
-
-			// ✅ NOW apply price filter to the LATEST value
-			if (latest.getPrice().compareTo(minPrice) >= 0 && latest.getPrice().compareTo(maxPrice) <= 0) {
-
-				FundForUI dto = new FundForUI();
-				dto.setCode(fund.getCode());
-				dto.setName(fund.getName());
-
-				if (fund.getType() != null) {
-					dto.setType(fund.getType().getName());
-				}
-
-				dto.setDate(latest.getDate());
-				dto.setPrice(latest.getPrice());
-				dto.setCirculatingUnits(latest.getCirculatingUnits());
-				dto.setInvestorCount(latest.getInvestorCount());
-				dto.setTotalValue(latest.getTotalValue());
-
-				result.add(dto);
-			}
+		for (FundPrice fp : latestInRange) {
+			Fund fund = fp.getFund();
+			result.add(toDto(fund, fp));
 		}
 
 		return result;
 	}
 
+	// ---------- 5) Search (still TODO) ----------
+
 	public List<FundForUI> search(FundSearchRequest request) {
-		return null;
+		// TODO: implement when you decide criteria
+		return List.of();
 	}
+
+	// ---------- 6) Top 5 by change (already optimized with heap) ----------
 
 	private static class FundChangeSnapshot {
 		private final Fund fund;
@@ -234,33 +221,17 @@ public class FundService {
 			}
 		}
 
-		// Now best5 contains at most 5 snapshots, but in ascending order
+		// Now best5 contains at most 5 snapshots in a heap
 		List<FundChangeSnapshot> topList = new ArrayList<>(best5);
 		topList.sort(Comparator.comparing(FundChangeSnapshot::getChange).reversed());
 
-		// Map to DTOs
-		List<FundForUI> result = new ArrayList<>();
+		List<FundForUI> result = new ArrayList<>(topList.size());
 		for (FundChangeSnapshot snap : topList) {
-			Fund fund = snap.getFund();
-			FundPrice endPriceRow = snap.getEndPriceRow();
-
-			FundForUI dto = new FundForUI();
-			dto.setCode(fund.getCode());
-			dto.setName(fund.getName());
-			if (fund.getType() != null) {
-				dto.setType(fund.getType().getName());
-			}
-			dto.setDate(endPriceRow.getDate());
-			dto.setPrice(endPriceRow.getPrice());
-			dto.setCirculatingUnits(endPriceRow.getCirculatingUnits());
-			dto.setInvestorCount(endPriceRow.getInvestorCount());
-			dto.setTotalValue(endPriceRow.getTotalValue());
+			FundForUI dto = toDto(snap.getFund(), snap.getEndPriceRow());
 			dto.setChange(snap.getChange());
-
 			result.add(dto);
 		}
 
 		return result;
 	}
-
 }
