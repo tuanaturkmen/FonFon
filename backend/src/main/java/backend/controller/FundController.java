@@ -1,4 +1,4 @@
-package backend;
+package backend.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
