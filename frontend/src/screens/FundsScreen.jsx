@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
 import { createTheme, ThemeProvider, CssBaseline, Box } from "@mui/material";
-import Header from "../components/Header";
 import FundTable from "../components/FundTable";
 import TopFundsCards from "../components/TopFundsCard";
 
@@ -54,16 +53,19 @@ const darkTheme = createTheme({
   },
 });
 
-export default function App() {
+export default function FundsScreen() {
+  const [page, setPage] = useState(0);
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Header />
 
-      <Box sx={{ marginTop: 1 }}>
-        <TopFundsCards />
-        <FundTable />
-      </Box>
+      {page == 0 && (
+        <Box sx={{ marginTop: 1 }}>
+          <TopFundsCards />
+          <FundTable />
+        </Box>
+      )}
     </ThemeProvider>
   );
 }
