@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   AppBar,
   Toolbar,
@@ -10,9 +10,7 @@ import {
 
 import DonutSmallIcon from "@mui/icons-material/DonutSmall";
 
-export default function Header() {
-  const [tab, setTab] = useState(0);
-
+export default function Header({ page, setPage }) {
   return (
     <AppBar
       position="static"
@@ -43,54 +41,29 @@ export default function Header() {
         >
           <Button
             sx={{
-              color: tab == 0 ? "#10B981" : "#9CA3AF",
+              color: page == 0 ? "#10B981" : "#9CA3AF",
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
             }}
             onClick={() => {
-              setTab(0);
+              setPage(0);
             }}
           >
             Funds
           </Button>
           <Button
             sx={{
-              color: tab == 1 ? "#10B981" : "#9CA3AF",
+              color: page == 1 ? "#10B981" : "#9CA3AF",
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
             }}
             onClick={() => {
-              setTab(1);
+              setPage(1);
             }}
           >
-            Dashboard
-          </Button>
-          <Button
-            sx={{
-              color: tab == 2 ? "#10B981" : "#9CA3AF",
-              textTransform: "none",
-              fontSize: "1rem",
-            }}
-            onClick={() => {
-              setTab(2);
-            }}
-          >
-            My Portfolio
-          </Button>
-          <Button
-            sx={{
-              color: tab == 3 ? "#10B981" : "#9CA3AF",
-              textTransform: "none",
-              fontSize: "1rem",
-              "&:hover": { color: "white" },
-            }}
-            onClick={() => {
-              setTab(3);
-            }}
-          >
-            Settings
+            Portfolios
           </Button>
         </Box>
 

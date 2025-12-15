@@ -1,7 +1,7 @@
 import axios from "axios";
 
-//const BASE_URL = "http://localhost:8080/api";
-const BASE_URL = "https://fonfon-backend.onrender.com/api";
+const BASE_URL = "http://localhost:8080/api";
+// const BASE_URL = "https://fonfon-backend.onrender.com/api";
 
 export const getAllFunds = async () => {
   const res = await axios.get(`${BASE_URL}/funds`);

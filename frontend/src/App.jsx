@@ -1,10 +1,17 @@
+import React, { useState } from "react";
 import "./App.css";
-import HomeScreen from "./screens/HomeScreen";
+import Header from "./components/Header";
+import FundsScreen from "./screens/FundsScreen";
+import PortfoliosScreen from "./screens/PortfoliosScreen";
 
 function App() {
+  const [page, setPage] = useState(0);
+
   return (
     <>
-      <HomeScreen></HomeScreen>
+      <Header page={page} setPage={setPage} />
+      {page == 0 && <FundsScreen />}
+      {page == 1 && <PortfoliosScreen />}
     </>
   );
 }
