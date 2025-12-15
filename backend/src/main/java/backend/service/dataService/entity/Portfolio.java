@@ -1,5 +1,6 @@
 package backend.service.dataService.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,4 +36,7 @@ public class Portfolio {
 
 	@OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PortfolioFund> funds = new ArrayList<>();
+
+	@Column(name = "total_amount", precision = 18, scale = 2)
+	private BigDecimal totalAmount;
 }

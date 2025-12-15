@@ -21,7 +21,6 @@ public class PortfolioForUI {
 		private String fundName;
 		private BigDecimal allocationPercent;
 		private BigDecimal ownedUnits;
-		private BigDecimal latestPrice;
-		private BigDecimal marketValue; // ownedUnits * latestPrice
+		private BigDecimal currentValue; // ownedUnits * latestPrice
 	}
 }
