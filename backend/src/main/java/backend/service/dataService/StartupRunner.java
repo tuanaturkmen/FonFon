@@ -49,8 +49,11 @@ public class StartupRunner implements CommandLineRunner {
 		}
 
 		try {
-			if (importEnabled)
+			if (importEnabled) {
+				System.out.println("Starting import...");
 				importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
+				System.out.println("Import finished.");
+			}
 			System.out.println("✅ Funds imported successfully!");
 		} catch (Exception e) {
 			System.out.println("❌ Import failed: " + e.getMessage());

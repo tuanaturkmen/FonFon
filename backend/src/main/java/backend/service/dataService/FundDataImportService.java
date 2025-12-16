@@ -39,10 +39,12 @@ public class FundDataImportService {
 	@Autowired
 	private FundPriceRepository fundPriceRepository;
 
+	int processed = 0, insertedFunds = 0, insertedPrices = 0;
+
 	@Transactional
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
-		// 1. Find the Fund Type (e.g., "INVESTMENT")
 
+		// 1. Find the Fund Type (e.g., "INVESTMENT")
 		FundType type = fundTypeRepository.findByName(fundTypeName).orElseGet(() -> {
 			System.out.println("⚠️ FundType '" + fundTypeName + "' not found. Creating it...");
 			FundType newType = new FundType();
@@ -75,6 +77,7 @@ public class FundDataImportService {
 				f.setCode(code);
 				f.setName(name);
 				f.setType(type);
+				insertedFunds++;
 				return fundRepository.save(f);
 			});
 
@@ -104,11 +107,15 @@ public class FundDataImportService {
 					fp.setCirculatingUnits(units); // Maps to 'circulating_units'
 					fp.setInvestorCount(investors); // Maps to 'investor_count'
 					fp.setTotalValue(totalVal);
-
+					insertedPrices++;
 					fundPriceRepository.save(fp);
 				}
+				processed++;
 			}
 		}
+
+		System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
+				+ insertedPrices);
 
 		workbook.close();
 	}
