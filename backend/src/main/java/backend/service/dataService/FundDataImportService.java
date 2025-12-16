@@ -42,8 +42,13 @@ public class FundDataImportService {
 	@Transactional
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
 		// 1. Find the Fund Type (e.g., "INVESTMENT")
-		FundType type = fundTypeRepository.findByName(fundTypeName)
-				.orElseThrow(() -> new IllegalArgumentException("Fund type not found: " + fundTypeName));
+
+		FundType type = fundTypeRepository.findByName(fundTypeName).orElseGet(() -> {
+			System.out.println("⚠️ FundType '" + fundTypeName + "' not found. Creating it...");
+			FundType newType = new FundType();
+			newType.setName(fundTypeName); // Assuming FundType has a setName method
+			return fundTypeRepository.save(newType);
+		});
 
 		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
 		InputStream is = excelFile.getInputStream();
