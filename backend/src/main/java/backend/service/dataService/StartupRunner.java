@@ -1,5 +1,6 @@
 package backend.service.dataService;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.Resource;
@@ -18,18 +19,43 @@ public class StartupRunner implements CommandLineRunner {
 
 	private final FundDataImportService importService;
 
+	@Autowired
+	javax.sql.DataSource dataSource;
+
 	public StartupRunner(FundDataImportService importService) {
 		this.importService = importService;
 	}
 
+	private void logDbInfo() {
+		try (var c = dataSource.getConnection();
+				var st = c.createStatement();
+				var rs = st.executeQuery("select current_database(), inet_server_addr(), inet_server_port()")) {
+			if (rs.next()) {
+				System.out.println("🗄️ DB=" + rs.getString(1) + " host=" + rs.getString(2) + ":" + rs.getInt(3));
+			}
+		} catch (Exception e) {
+			System.out.println("❌ DB connection check failed: " + e.getMessage());
+			throw new RuntimeException(e);
+		}
+	}
+
 	@Override
 	public void run(String... args) throws Exception {
+
+		logDbInfo();
+		if (!importEnabled) {
+			System.out.println("ℹ️ Import Data disabled.");
+			return;
+		}
+
 		try {
 			if (importEnabled)
 				importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
+			System.out.println("✅ Funds imported successfully!");
 		} catch (Exception e) {
+			System.out.println("❌ Import failed: " + e.getMessage());
 			e.printStackTrace();
 		}
-		System.out.println("✅ Funds imported successfully!");
+
 	}
 }

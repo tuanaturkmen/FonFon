@@ -45,6 +45,7 @@ public class FundDataImportService {
 		FundType type = fundTypeRepository.findByName(fundTypeName)
 				.orElseThrow(() -> new IllegalArgumentException("Fund type not found: " + fundTypeName));
 
+		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
 		InputStream is = excelFile.getInputStream();
 
 		// Pass 'is' to Apache POI
