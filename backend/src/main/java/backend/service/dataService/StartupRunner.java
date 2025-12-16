@@ -58,6 +58,7 @@ public class StartupRunner implements CommandLineRunner {
 		} catch (Exception e) {
 			System.out.println("❌ Import failed: " + e.getMessage());
 			e.printStackTrace();
+			throw e;
 		}
 
 	}

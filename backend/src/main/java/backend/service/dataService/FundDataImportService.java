@@ -58,10 +58,15 @@ public class FundDataImportService {
 		// Pass 'is' to Apache POI
 		Workbook workbook = new XSSFWorkbook(is);
 		Sheet sheet = workbook.getSheetAt(0);
+		int rows = 0;
 
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0)
 				continue; // Skip Header
+
+			if (++rows % 500 == 0) {
+				System.out.println("…processed " + rows + " rows");
+			}
 
 			// --- A. Read Basic Info ---
 			String code = getStringValue(row.getCell(1));
@@ -114,6 +119,7 @@ public class FundDataImportService {
 			}
 		}
 
+		System.out.println("📊 Total processed rows=" + rows);
 		System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
 				+ insertedPrices);
 
