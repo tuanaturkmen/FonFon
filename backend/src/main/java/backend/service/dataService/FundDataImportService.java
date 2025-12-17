@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import backend.service.dataService.entity.Fund;
 import backend.service.dataService.entity.FundPrice;
@@ -41,7 +40,6 @@ public class FundDataImportService {
 
 	int processed = 0, insertedFunds = 0, insertedPrices = 0;
 
-	@Transactional
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
 
 		// 1. Find the Fund Type (e.g., "INVESTMENT")
