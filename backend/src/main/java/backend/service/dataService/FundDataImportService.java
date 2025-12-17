@@ -10,11 +10,12 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+
+import com.monitorjbl.xlsx.StreamingReader;
 
 import backend.service.dataService.entity.Fund;
 import backend.service.dataService.entity.FundPrice;
@@ -55,12 +56,13 @@ public class FundDataImportService {
 		});
 
 		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
-		try (InputStream is = excelFile.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+		try (InputStream is = excelFile.getInputStream();
+				// --- 2. THE FIX: Use StreamingReader instead of XSSFWorkbook ---
+				Workbook workbook = StreamingReader.builder().rowCacheSize(100) // Keep only 100 rows in memory
+						.bufferSize(4096) // Read 4KB at a time
+						.open(is)) {
+			System.out.println("✅ Workbook opened in STREAMING mode.");
 			Sheet sheet = workbook.getSheetAt(0);
-
-			System.out.println("✅ Workbook opened. sheetName=" + sheet.getSheetName() + " lastRowNum="
-					+ sheet.getLastRowNum() + " physicalRows=" + sheet.getPhysicalNumberOfRows());
-
 			int rows = 0;
 
 			for (Row row : sheet) {
@@ -69,7 +71,7 @@ public class FundDataImportService {
 
 				try {
 
-					if (++rows % 10 == 0) {
+					if (++rows % 100 == 0) { // Log every 100 rows to reduce noise
 						System.out.println("…processed rows=" + rows);
 					}
 
