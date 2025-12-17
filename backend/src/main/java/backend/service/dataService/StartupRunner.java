@@ -48,18 +48,19 @@ public class StartupRunner implements CommandLineRunner {
 			return;
 		}
 
-		try {
-			if (importEnabled) {
-				System.out.println("Starting import from branch deploy-gcp...");
-				importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
-				System.out.println("Import finished.");
+		new Thread(() -> {
+			try {
+				if (importEnabled) {
+					System.out.println("Starting import from branch deploy-gcp...");
+					importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
+					System.out.println("Import finished.");
+				}
+				System.out.println("✅ Funds imported successfully!");
+			} catch (Exception e) {
+				System.out.println("❌ Import failed: " + e.getMessage());
+				e.printStackTrace();
 			}
-			System.out.println("✅ Funds imported successfully!");
-		} catch (Exception e) {
-			System.out.println("❌ Import failed: " + e.getMessage());
-			e.printStackTrace();
-			throw e;
-		}
+		}).start();
 
 	}
 }
