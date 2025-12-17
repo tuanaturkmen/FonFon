@@ -42,6 +42,10 @@ public class FundDataImportService {
 
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
 
+		processed = 0;
+		insertedFunds = 0;
+		insertedPrices = 0;
+
 		// 1. Find the Fund Type (e.g., "INVESTMENT")
 		FundType type = fundTypeRepository.findByName(fundTypeName).orElseGet(() -> {
 			System.out.println("⚠️ FundType '" + fundTypeName + "' not found. Creating it...");
@@ -114,9 +118,15 @@ public class FundDataImportService {
 						fp.setInvestorCount(investors); // Maps to 'investor_count'
 						fp.setTotalValue(totalVal);
 						try {
-							fundPriceRepository.save(fp);
-							insertedPrices++;
+							int inserted = fundPriceRepository.insertIgnoreDuplicate(fund.getId(), localDate, price,
+									units, investors, totalVal);
+
 							processed++;
+							if (inserted == 1) {
+								insertedPrices++;
+							} else {
+								// duplicate skipped
+							}
 						} catch (org.springframework.dao.DataIntegrityViolationException dup) {
 							// duplicate row -> ignore
 						}

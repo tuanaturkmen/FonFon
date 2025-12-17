@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import backend.service.dataService.entity.Fund;
 import backend.service.dataService.entity.FundPrice;
@@ -64,4 +66,17 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 			""")
 	List<FundPrice> findLatestPriceInRange(@Param("minPrice") BigDecimal minPrice,
 			@Param("maxPrice") BigDecimal maxPrice);
+
+	@Modifying
+	@Transactional
+	@Query(value = """
+			INSERT INTO fund_price_history
+			  (fund_id, date, price, circulating_units, investor_count, total_value, created_at)
+			VALUES
+			  (:fundId, :date, :price, :units, :investors, :totalVal, now())
+			ON CONFLICT (fund_id, date) DO NOTHING
+			""", nativeQuery = true)
+	int insertIgnoreDuplicate(@Param("fundId") Long fundId, @Param("date") LocalDate date,
+			@Param("price") BigDecimal price, @Param("units") BigDecimal units, @Param("investors") Integer investors,
+			@Param("totalVal") BigDecimal totalVal);
 }
