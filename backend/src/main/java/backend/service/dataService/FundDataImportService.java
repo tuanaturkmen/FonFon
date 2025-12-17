@@ -51,52 +51,48 @@ public class FundDataImportService {
 		});
 
 		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
-		InputStream is = excelFile.getInputStream();
+		try (InputStream is = excelFile.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+			Sheet sheet = workbook.getSheetAt(0);
+			int rows = 0;
 
-		// Pass 'is' to Apache POI
-		Workbook workbook = new XSSFWorkbook(is);
-		Sheet sheet = workbook.getSheetAt(0);
-		int rows = 0;
+			for (Row row : sheet) {
+				if (row.getRowNum() == 0)
+					continue; // Skip Header
 
-		for (Row row : sheet) {
-			if (row.getRowNum() == 0)
-				continue; // Skip Header
+				if (++rows % 500 == 0) {
+					System.out.println("…processed " + rows + " rows");
+				}
 
-			if (++rows % 500 == 0) {
-				System.out.println("…processed " + rows + " rows");
-			}
+				// --- A. Read Basic Info ---
+				String code = getStringValue(row.getCell(1));
+				String name = getStringValue(row.getCell(2));
 
-			// --- A. Read Basic Info ---
-			String code = getStringValue(row.getCell(1));
-			String name = getStringValue(row.getCell(2));
+				if (code == null || code.trim().isEmpty() || code.equals("Fon Kodu")) {
+					continue;
+				}
 
-			if (code == null || code.trim().isEmpty() || code.equals("Fon Kodu")) {
-				continue;
-			}
+				// --- B. Find or Create the Fund ---
+				Fund fund = fundRepository.findByCode(code).orElseGet(() -> {
+					Fund f = new Fund();
+					f.setCode(code);
+					f.setName(name);
+					f.setType(type);
+					insertedFunds++;
+					return fundRepository.save(f);
+				});
 
-			// --- B. Find or Create the Fund ---
-			Fund fund = fundRepository.findByCode(code).orElseGet(() -> {
-				Fund f = new Fund();
-				f.setCode(code);
-				f.setName(name);
-				f.setType(type);
-				insertedFunds++;
-				return fundRepository.save(f);
-			});
+				// --- C. Read Historical Data ---
+				Date excelDate = null;
+				try {
+					excelDate = row.getCell(0).getDateCellValue();
+				} catch (Exception e) {
+					continue;
+				} // Skip if date is invalid
 
-			// --- C. Read Historical Data ---
-			Date excelDate = null;
-			try {
-				excelDate = row.getCell(0).getDateCellValue();
-			} catch (Exception e) {
-				continue;
-			} // Skip if date is invalid
+				if (excelDate != null) {
+					java.time.LocalDate localDate = excelDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-			if (excelDate != null) {
-				java.time.LocalDate localDate = excelDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-				// Check for duplicates
-				if (!fundPriceRepository.existsByFundAndDate(fund, localDate)) {
+					// Check for duplicates
 
 					BigDecimal price = getBigDecimalValue(row.getCell(3)); // Fiyat
 					BigDecimal units = getBigDecimalValue(row.getCell(4)); // Tedavüldeki Pay Sayısı
@@ -112,16 +108,16 @@ public class FundDataImportService {
 					fp.setTotalValue(totalVal);
 					insertedPrices++;
 					fundPriceRepository.save(fp);
+					processed++;
 				}
-				processed++;
 			}
+
+			System.out.println("📊 Total processed rows=" + rows);
+			System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
+					+ insertedPrices);
+
+			workbook.close();
 		}
-
-		System.out.println("📊 Total processed rows=" + rows);
-		System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
-				+ insertedPrices);
-
-		workbook.close();
 	}
 
 	// --- Helper Methods ---

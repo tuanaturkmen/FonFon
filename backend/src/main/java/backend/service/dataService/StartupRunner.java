@@ -50,7 +50,7 @@ public class StartupRunner implements CommandLineRunner {
 
 		try {
 			if (importEnabled) {
-				System.out.println("Starting import...");
+				System.out.println("Starting import from branch deploy-gcp...");
 				importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
 				System.out.println("Import finished.");
 			}
