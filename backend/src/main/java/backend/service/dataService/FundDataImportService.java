@@ -53,62 +53,78 @@ public class FundDataImportService {
 		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
 		try (InputStream is = excelFile.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
 			Sheet sheet = workbook.getSheetAt(0);
+
+			System.out.println("✅ Workbook opened. sheetName=" + sheet.getSheetName() + " lastRowNum="
+					+ sheet.getLastRowNum() + " physicalRows=" + sheet.getPhysicalNumberOfRows());
+
 			int rows = 0;
 
 			for (Row row : sheet) {
 				if (row.getRowNum() == 0)
 					continue; // Skip Header
 
-				if (++rows % 500 == 0) {
-					System.out.println("…processed " + rows + " rows");
-				}
-
-				// --- A. Read Basic Info ---
-				String code = getStringValue(row.getCell(1));
-				String name = getStringValue(row.getCell(2));
-
-				if (code == null || code.trim().isEmpty() || code.equals("Fon Kodu")) {
-					continue;
-				}
-
-				// --- B. Find or Create the Fund ---
-				Fund fund = fundRepository.findByCode(code).orElseGet(() -> {
-					Fund f = new Fund();
-					f.setCode(code);
-					f.setName(name);
-					f.setType(type);
-					insertedFunds++;
-					return fundRepository.save(f);
-				});
-
-				// --- C. Read Historical Data ---
-				Date excelDate = null;
 				try {
-					excelDate = row.getCell(0).getDateCellValue();
+
+					if (++rows % 10 == 0) {
+						System.out.println("…processed rows=" + rows);
+					}
+
+					// --- A. Read Basic Info ---
+					String code = getStringValue(row.getCell(1));
+					String name = getStringValue(row.getCell(2));
+
+					if (code == null || code.trim().isEmpty() || code.equals("Fon Kodu")) {
+						continue;
+					}
+
+					// --- B. Find or Create the Fund ---
+					Fund fund = fundRepository.findByCode(code).orElseGet(() -> {
+						Fund f = new Fund();
+						f.setCode(code);
+						f.setName(name);
+						f.setType(type);
+						insertedFunds++;
+						return fundRepository.save(f);
+					});
+
+					// --- C. Read Historical Data ---
+					Date excelDate = null;
+					try {
+						excelDate = row.getCell(0).getDateCellValue();
+					} catch (Exception e) {
+						continue;
+					} // Skip if date is invalid
+
+					if (excelDate != null) {
+						java.time.LocalDate localDate = excelDate.toInstant().atZone(ZoneId.systemDefault())
+								.toLocalDate();
+
+						// Check for duplicates
+
+						BigDecimal price = getBigDecimalValue(row.getCell(3)); // Fiyat
+						BigDecimal units = getBigDecimalValue(row.getCell(4)); // Tedavüldeki Pay Sayısı
+						Integer investors = getIntegerValue(row.getCell(5)); // Kişi Sayısı
+						BigDecimal totalVal = getBigDecimalValue(row.getCell(6)); // Fon Toplam Değer
+
+						FundPrice fp = new FundPrice();
+						fp.setFund(fund);
+						fp.setDate(localDate);
+						fp.setPrice(price);
+						fp.setCirculatingUnits(units); // Maps to 'circulating_units'
+						fp.setInvestorCount(investors); // Maps to 'investor_count'
+						fp.setTotalValue(totalVal);
+						try {
+							fundPriceRepository.save(fp);
+							insertedPrices++;
+							processed++;
+						} catch (org.springframework.dao.DataIntegrityViolationException dup) {
+							// duplicate row -> ignore
+						}
+					}
 				} catch (Exception e) {
-					continue;
-				} // Skip if date is invalid
-
-				if (excelDate != null) {
-					java.time.LocalDate localDate = excelDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-					// Check for duplicates
-
-					BigDecimal price = getBigDecimalValue(row.getCell(3)); // Fiyat
-					BigDecimal units = getBigDecimalValue(row.getCell(4)); // Tedavüldeki Pay Sayısı
-					Integer investors = getIntegerValue(row.getCell(5)); // Kişi Sayısı
-					BigDecimal totalVal = getBigDecimalValue(row.getCell(6)); // Fon Toplam Değer
-
-					FundPrice fp = new FundPrice();
-					fp.setFund(fund);
-					fp.setDate(localDate);
-					fp.setPrice(price);
-					fp.setCirculatingUnits(units); // Maps to 'circulating_units'
-					fp.setInvestorCount(investors); // Maps to 'investor_count'
-					fp.setTotalValue(totalVal);
-					insertedPrices++;
-					fundPriceRepository.save(fp);
-					processed++;
+					System.out.println("❌ Failed at excelRow=" + row.getRowNum());
+					e.printStackTrace();
+					throw e;
 				}
 			}
 
@@ -116,7 +132,6 @@ public class FundDataImportService {
 			System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
 					+ insertedPrices);
 
-			workbook.close();
 		}
 	}
 
