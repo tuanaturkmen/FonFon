@@ -24,51 +24,43 @@
         <java.version>17</java.version>
     </properties>
 
-    <dependencies>
-        <!-- ✅ Spring Boot starters (no explicit version needed) -->
+   <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-		    <groupId>com.monitorjbl</groupId>
-		    <artifactId>xlsx-streamer</artifactId>
-		    <version>2.1.0</version>
-		</dependency>
-         <dependency>
-             <groupId>com.google.cloud</groupId>
-             <artifactId>spring-cloud-gcp-starter-sql-postgresql</artifactId>
-             <version>5.1.0</version>
-         </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-
-        <!-- ✅ PostgreSQL driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
-
-        <!-- ✅ Apache POI (only once) -->
+        
         <dependency>
-	      <groupId>org.apache.poi</groupId>
-	      <artifactId>poi</artifactId>
-	      <version>4.0.0</version>
-   	 	</dependency>
-    	<dependency>
-	      <groupId>org.apache.poi</groupId>
-	      <artifactId>poi-ooxml</artifactId>
-	      <version>4.0.0</version>
-    	</dependency>
-	    <dependency>
-	      <groupId>org.apache.poi</groupId>
-	      <artifactId>poi-ooxml-schemas</artifactId>
-	      <version>4.0.0</version>
-	    </dependency>
+             <groupId>com.google.cloud</groupId>
+             <artifactId>spring-cloud-gcp-starter-sql-postgresql</artifactId>
+             <version>5.1.0</version>
+         </dependency>
 
-        <!-- ✅ Lombok (only once) -->
+        <dependency>
+            <groupId>com.monitorjbl</groupId>
+            <artifactId>xlsx-streamer</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

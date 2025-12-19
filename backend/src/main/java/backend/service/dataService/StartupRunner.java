@@ -56,9 +56,12 @@ public class StartupRunner implements CommandLineRunner {
 					System.out.println("Import finished.");
 				}
 				System.out.println("✅ Funds imported successfully!");
-			} catch (Exception e) {
-				System.out.println("❌ Import failed: " + e.getMessage());
-				e.printStackTrace();
+			} catch (Throwable t) { // <--- CHANGE 'Exception' TO 'Throwable'
+				// This catches OutOfMemoryError, NoClassDefFoundError, etc.
+				System.out.println("❌ CRITICAL FAILURE in Background Thread!");
+				System.out.println("❌ Error type: " + t.getClass().getName());
+				System.out.println("❌ Message: " + t.getMessage());
+				t.printStackTrace();
 			}
 		}).start();
 
