@@ -41,6 +41,8 @@ public class FundDataImportService {
 
 	int processed = 0, insertedFunds = 0, insertedPrices = 0;
 
+	@org.springframework.scheduling.annotation.Async
+	@org.springframework.transaction.annotation.Transactional
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
 
 		processed = 0;
