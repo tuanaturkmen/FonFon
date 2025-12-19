@@ -53,10 +53,20 @@
 
         <!-- ✅ Apache POI (only once) -->
         <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>5.2.5</version>
-        </dependency>
+	      <groupId>org.apache.poi</groupId>
+	      <artifactId>poi</artifactId>
+	      <version>4.0.0</version>
+   	 	</dependency>
+    	<dependency>
+	      <groupId>org.apache.poi</groupId>
+	      <artifactId>poi-ooxml</artifactId>
+	      <version>4.0.0</version>
+    	</dependency>
+	    <dependency>
+	      <groupId>org.apache.poi</groupId>
+	      <artifactId>poi-ooxml-schemas</artifactId>
+	      <version>4.0.0</version>
+	    </dependency>
 
         <!-- ✅ Lombok (only once) -->
         <dependency>
