@@ -13,6 +13,7 @@ import {
   Slider,
   IconButton,
   Stack,
+  Button,
 } from "@mui/material";
 
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -69,49 +70,95 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollbarColor: "#334155 transparent",
+          "&::-webkit-scrollbar, & *::-webkit-scrollbar": {
+            width: "6px",
+            height: "6px",
+          },
+          "&::-webkit-scrollbar-track, & *::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb": {
+            backgroundColor: "#334155",
+            borderRadius: "3px",
+          },
+          "&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover":
+            {
+              backgroundColor: "#475569",
+            },
+        },
+      },
+    },
   },
 });
 
-export default function PortfolioCreator() {
-  const [funds, setFunds] = useState([
-    {
-      id: 1,
-      name: "Global Tech Innovators",
-      ticker: "GTI",
-      percent: 45,
-    },
-    {
-      id: 2,
-      name: "Emerging Markets Growth",
-      ticker: "EMG",
-      percent: 30,
-    },
-  ]);
+export default function PortfolioCreator({
+  handleBackClick,
+  handleCreateClick,
+}) {
+  const [funds, setFunds] = useState([]);
+
+  const [portfolioName, setPortfolioName] = useState("");
+  const [totalAmount, setTotalAmount] = useState("");
+  const [errors, setErrors] = useState({ name: "", amount: "" });
 
   const totalAllocation = funds.reduce((acc, fund) => acc + fund.percent, 0);
 
-  const handleSliderChange = (id, newValue) => {
-    setFunds(funds.map((f) => (f.id === id ? { ...f, percent: newValue } : f)));
+  const validate = () => {
+    let tempErrors = {};
+    let isValid = true;
+
+    if (!portfolioName.trim()) {
+      tempErrors.name = "Portfolio name is required.";
+      isValid = false;
+    }
+
+    const cleanAmount = totalAmount.toString();
+    if (!cleanAmount || isNaN(cleanAmount) || parseFloat(cleanAmount) <= 0) {
+      tempErrors.amount = "Please enter a valid investment amount.";
+      isValid = false;
+    }
+
+    if (funds.some((f) => f.percent <= 0)) {
+      tempErrors.funds = "error";
+      isValid = false;
+    }
+
+    setErrors(tempErrors);
+    return isValid;
   };
 
-  const handleDelete = (id) => {
-    setFunds(funds.filter((f) => f.id !== id));
+  const handleSliderChange = (code, newValue) => {
+    const otherFundsTotal = funds
+      .filter((f) => f.code !== code)
+      .reduce((acc, f) => acc + f.percent, 0);
+
+    const maxAllowed = 100 - otherFundsTotal;
+
+    const validValue = Math.min(newValue, maxAllowed);
+
+    setFunds(
+      funds.map((f) => (f.code === code ? { ...f, percent: validValue } : f))
+    );
+  };
+
+  const handleDelete = (code) => {
+    setFunds(funds.filter((f) => f.code !== code));
   };
 
   const handleAddFund = (newFund) => {
-    // Check if already exists
-    if (funds.some((f) => f.ticker === newFund.ticker)) {
+    if (funds.some((f) => f.code === newFund.code)) {
       alert("This fund is already in your portfolio.");
       return;
     }
 
-    // Add with 0 percent initially
     setFunds([
       ...funds,
       {
-        id: newFund.id,
-        name: newFund.name,
-        ticker: newFund.ticker,
+        code: newFund.code,
         percent: 0,
       },
     ]);
@@ -121,8 +168,8 @@ export default function PortfolioCreator() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
 
-      <Container maxWidth="xl" sx={{ mt: 5, mb: 5 }}>
-        <Box sx={{ mb: 4 }}>
+      <Container sx={{ mt: 5, mb: 5, maxWidth: "95% !important" }}>
+        <Box sx={{ mb: 2 }}>
           <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
             Create Your Portfolio
           </Typography>
@@ -132,10 +179,9 @@ export default function PortfolioCreator() {
           </Typography>
         </Box>
 
-        <Grid container spacing={4}>
-          {/* Left Column */}
-          <Grid item xs={12} lg={7}>
-            <Paper sx={{ p: 3, mb: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} lg={8}>
+            <Paper sx={{ p: 3, mb: 2 }}>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Typography
@@ -149,6 +195,13 @@ export default function PortfolioCreator() {
                     placeholder="e.g., Long-Term Growth"
                     variant="outlined"
                     size="small"
+                    value={portfolioName}
+                    error={!!errors.name}
+                    helperText={errors.name}
+                    onChange={(e) => {
+                      setPortfolioName(e.target.value);
+                      if (errors.name) setErrors({ ...errors, name: "" });
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -163,12 +216,26 @@ export default function PortfolioCreator() {
                     placeholder="e.g., $10,000"
                     variant="outlined"
                     size="small"
+                    value={totalAmount}
+                    error={!!errors.amount}
+                    helperText={errors.amount}
+                    onChange={(e) => {
+                      setTotalAmount(e.target.value);
+                      if (errors.amount) setErrors({ ...errors, amount: "" });
+                    }}
                   />
                 </Grid>
               </Grid>
             </Paper>
 
-            <Paper sx={{ p: 3, minHeight: 400 }}>
+            <Paper
+              sx={{
+                p: 3,
+                height: 450,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6" sx={{ mb: 3 }}>
                 Selected Funds
               </Typography>
@@ -200,64 +267,136 @@ export default function PortfolioCreator() {
                 </Typography>
               </Box>
 
-              {/* Funds List */}
-              <Stack spacing={2}>
-                {funds.map((fund) => (
-                  <Paper
-                    key={fund.id}
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      bgcolor: "#17202e",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      border: "none",
-                    }}
-                  >
-                    {/* Name & Ticker */}
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="subtitle2">{fund.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {fund.ticker}
-                      </Typography>
-                    </Box>
-
-                    {/* Slider */}
-                    <Box sx={{ width: 140, mr: 2 }}>
-                      <Slider
-                        value={fund.percent}
-                        onChange={(e, val) => handleSliderChange(fund.id, val)}
-                        size="small"
-                      />
-                    </Box>
-
-                    {/* Percentage */}
-                    <Typography
-                      variant="body2"
-                      sx={{ width: 40, textAlign: "right", fontWeight: "bold" }}
-                    >
-                      {fund.percent}%
-                    </Typography>
-
-                    {/* Delete Button */}
-                    <IconButton
-                      onClick={() => handleDelete(fund.id)}
-                      size="small"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Paper>
-                ))}
-              </Stack>
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  overflowY: "auto",
+                  pr: 1,
+                }}
+              >
+                <Stack spacing={2}>
+                  {funds.map((fund) => {
+                    const hasError = errors.funds && fund.percent === 0;
+                    return (
+                      <Paper
+                        key={fund.id}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          bgcolor: hasError
+                            ? "rgba(239, 83, 80, 0.08)"
+                            : "#17202e",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          border: hasError
+                            ? "1px solid #ef5350"
+                            : "1px solid transparent",
+                          transition: "all 0.2s ease-in-out",
+                        }}
+                      >
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                          <Typography variant="subtitle2" noWrap>
+                            {fund.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {fund.code}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ width: 140, mr: 2 }}>
+                          <Slider
+                            value={fund.percent}
+                            onChange={(e, val) =>
+                              handleSliderChange(fund.code, val)
+                            }
+                            size="small"
+                            color={hasError ? "error" : "primary"}
+                            sx={{ mb: 0 }}
+                          />
+                          {hasError && (
+                            <Typography
+                              variant="caption"
+                              color="error"
+                              sx={{
+                                display: "block",
+                                mt: -0.5,
+                                fontSize: "0.7rem",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              Allocation cannot be 0
+                            </Typography>
+                          )}
+                        </Box>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            width: 40,
+                            textAlign: "right",
+                            fontWeight: "bold",
+                            color: hasError ? "#ef5350" : "inherit",
+                          }}
+                        >
+                          {fund.percent}%
+                        </Typography>
+                        <IconButton
+                          onClick={() => handleDelete(fund.code)}
+                          size="small"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              </Box>
             </Paper>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mt: 2, justifyContent: "flex-end" }}
+            >
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="large"
+                sx={{ minWidth: 100, borderColor: "#334155" }}
+                onClick={() => {
+                  handleBackClick();
+                }}
+              >
+                Back
+              </Button>
+              <Button
+                variant="contained"
+                size="large"
+                sx={{ minWidth: 140 }}
+                disabled={totalAllocation != 100}
+                onClick={() => {
+                  if (!validate()) return;
+
+                  const payload = {
+                    userId: 1,
+                    name: portfolioName,
+                    totalAmount: parseFloat(totalAmount),
+                    allocations: funds.map((fund) => ({
+                      fundCode: fund.code,
+                      allocationPercent: fund.percent,
+                    })),
+                  };
+
+                  handleCreateClick(payload);
+                }}
+              >
+                Create
+              </Button>
+            </Stack>
           </Grid>
 
-          {/* Right Column */}
-          <Grid item xs={12} lg={5}>
+          <Grid item xs={12} lg={4}>
             <Box sx={{ height: "100%" }}>
-              <FundList onAddFund={handleAddFund} />
+              <FundList onAddFund={handleAddFund} currentPortfolio={funds} />
             </Box>
           </Grid>
         </Grid>
