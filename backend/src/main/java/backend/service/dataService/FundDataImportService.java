@@ -42,7 +42,7 @@ public class FundDataImportService {
 	int processed = 0, insertedFunds = 0, insertedPrices = 0;
 
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
-
+		System.out.println("IMPORT THREAD = " + Thread.currentThread().getName());
 		processed = 0;
 		insertedFunds = 0;
 		insertedPrices = 0;
