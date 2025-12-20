@@ -30,7 +30,7 @@ public class FundController {
 		return ResponseEntity.ok(funds);
 	}
 
-	// GET /api/funds/history?startDate=2025-10-17&endDate=2025-10-19
+	// GET /api/funds/history?startDate=2025-11-17&endDate=2025-11-19
 	@GetMapping("/funds/history")
 	public ResponseEntity<List<FundForUI>> getFundsByDateRange(
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

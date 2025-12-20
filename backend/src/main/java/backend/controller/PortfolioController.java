@@ -1,8 +1,10 @@
 package backend.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,9 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import backend.frontendModels.PortfolioForUI;
+import backend.frontendModels.PortfolioValuePointForUI;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest;
 import backend.service.dataService.PortfolioService;
 
@@ -45,7 +49,6 @@ public class PortfolioController {
 	@GetMapping("/user/{userId}")
 	public ResponseEntity<List<PortfolioForUI>> getPortfoliosByUser(@PathVariable Long userId) {
 		List<PortfolioForUI> portfolios = portfolioService.getPortfoliosByUser(userId);
-		System.err.println(portfolios.size());
 		return ResponseEntity.ok(portfolios);
 	}
 
@@ -55,6 +58,20 @@ public class PortfolioController {
 
 		portfolioService.deletePortfolio(userId, portfolioId);
 		return ResponseEntity.noContent().build(); // HTTP 204
+	}
+
+	// Get values of a portfolio over a date range
+	// /user/{userId}/{portfolioId}/values?startDate=2025-11-17&endDate=2025-11-19
+	@GetMapping("/user/{userId}/{portfolioId}/values")
+	public ResponseEntity<List<PortfolioValuePointForUI>> getPortfolioValuesOverDate(@PathVariable Long userId,
+			@PathVariable Long portfolioId,
+			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+		List<PortfolioValuePointForUI> values = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
+				startDate, endDate);
+
+		return ResponseEntity.ok(values);
 	}
 
 }
