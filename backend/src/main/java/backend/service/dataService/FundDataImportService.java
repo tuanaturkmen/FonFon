@@ -10,12 +10,12 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import com.github.pjfanning.xlsx.StreamingReader;
 
 import backend.service.dataService.entity.Fund;
 import backend.service.dataService.entity.FundPrice;
@@ -41,8 +41,11 @@ public class FundDataImportService {
 
 	int processed = 0, insertedFunds = 0, insertedPrices = 0;
 
-	@Transactional
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
+		System.out.println("IMPORT THREAD = " + Thread.currentThread().getName());
+		processed = 0;
+		insertedFunds = 0;
+		insertedPrices = 0;
 
 		// 1. Find the Fund Type (e.g., "INVESTMENT")
 		FundType type = fundTypeRepository.findByName(fundTypeName).orElseGet(() -> {
@@ -53,10 +56,16 @@ public class FundDataImportService {
 		});
 
 		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
+		long t0 = System.currentTimeMillis();
+		System.out.println("IMPORT: opening InputStream...");
 		InputStream is = excelFile.getInputStream();
+		System.out.println("IMPORT: InputStream opened in " + (System.currentTimeMillis() - t0) + " ms");
 
-		// Pass 'is' to Apache POI
-		Workbook workbook = new XSSFWorkbook(is);
+		t0 = System.currentTimeMillis();
+		System.out.println("IMPORT: opening workbook...");
+		Workbook workbook = StreamingReader.builder().rowCacheSize(100).bufferSize(4096).open(is);
+		System.out.println("IMPORT: workbook opened in " + (System.currentTimeMillis() - t0) + " ms");
+		System.out.println("✅ Workbook opened in STREAMING mode.");
 		Sheet sheet = workbook.getSheetAt(0);
 		int rows = 0;
 
@@ -64,41 +73,41 @@ public class FundDataImportService {
 			if (row.getRowNum() == 0)
 				continue; // Skip Header
 
-			if (++rows % 500 == 0) {
-				System.out.println("…processed " + rows + " rows");
-			}
-
-			// --- A. Read Basic Info ---
-			String code = getStringValue(row.getCell(1));
-			String name = getStringValue(row.getCell(2));
-
-			if (code == null || code.trim().isEmpty() || code.equals("Fon Kodu")) {
-				continue;
-			}
-
-			// --- B. Find or Create the Fund ---
-			Fund fund = fundRepository.findByCode(code).orElseGet(() -> {
-				Fund f = new Fund();
-				f.setCode(code);
-				f.setName(name);
-				f.setType(type);
-				insertedFunds++;
-				return fundRepository.save(f);
-			});
-
-			// --- C. Read Historical Data ---
-			Date excelDate = null;
 			try {
-				excelDate = row.getCell(0).getDateCellValue();
-			} catch (Exception e) {
-				continue;
-			} // Skip if date is invalid
 
-			if (excelDate != null) {
-				java.time.LocalDate localDate = excelDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+				if (++rows % 10 == 0)
+					System.out.println("…processed rows=" + rows);
 
-				// Check for duplicates
-				if (!fundPriceRepository.existsByFundAndDate(fund, localDate)) {
+				// --- A. Read Basic Info ---
+				String code = getStringValue(row.getCell(1));
+				String name = getStringValue(row.getCell(2));
+
+				if (code == null || code.trim().isEmpty() || code.equals("Fon Kodu")) {
+					continue;
+				}
+
+				// --- B. Find or Create the Fund ---
+				Fund fund = fundRepository.findByCode(code).orElseGet(() -> {
+					Fund f = new Fund();
+					f.setCode(code);
+					f.setName(name);
+					f.setType(type);
+					insertedFunds++;
+					return fundRepository.save(f);
+				});
+
+				// --- C. Read Historical Data ---
+				Date excelDate = null;
+				try {
+					excelDate = row.getCell(0).getDateCellValue();
+				} catch (Exception e) {
+					continue;
+				} // Skip if date is invalid
+
+				if (excelDate != null) {
+					java.time.LocalDate localDate = excelDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+					// Check for duplicates
 
 					BigDecimal price = getBigDecimalValue(row.getCell(3)); // Fiyat
 					BigDecimal units = getBigDecimalValue(row.getCell(4)); // Tedavüldeki Pay Sayısı
@@ -112,10 +121,24 @@ public class FundDataImportService {
 					fp.setCirculatingUnits(units); // Maps to 'circulating_units'
 					fp.setInvestorCount(investors); // Maps to 'investor_count'
 					fp.setTotalValue(totalVal);
-					insertedPrices++;
-					fundPriceRepository.save(fp);
+					try {
+						int inserted = fundPriceRepository.insertIgnoreDuplicate(fund.getId(), localDate, price, units,
+								investors, totalVal);
+
+						processed++;
+						if (inserted == 1) {
+							insertedPrices++;
+						} else {
+							// duplicate skipped
+						}
+					} catch (org.springframework.dao.DataIntegrityViolationException dup) {
+						// duplicate row -> ignore
+					}
 				}
-				processed++;
+			} catch (Exception e) {
+				System.out.println("❌ Failed at excelRow=" + row.getRowNum());
+				e.printStackTrace();
+				throw e;
 			}
 		}
 
@@ -123,7 +146,6 @@ public class FundDataImportService {
 		System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
 				+ insertedPrices);
 
-		workbook.close();
 	}
 
 	// --- Helper Methods ---

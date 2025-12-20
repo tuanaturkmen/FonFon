@@ -48,18 +48,29 @@ public class StartupRunner implements CommandLineRunner {
 			return;
 		}
 
+//		new Thread(() -> {
 		try {
 			if (importEnabled) {
-				System.out.println("Starting import...");
+				System.out.println("Starting import from branch deploy-gcp...");
+				long t0 = System.currentTimeMillis();
+				System.out.println(
+						"IMPORT: about to call importFundsFromExcel, thread=" + Thread.currentThread().getName());
+
 				importService.importFundsFromExcel(FundTypeEnum.INVESTMENT.getName());
+
+				System.out.println(
+						"IMPORT: returned from importFundsFromExcel in " + (System.currentTimeMillis() - t0) + " ms");
 				System.out.println("Import finished.");
 			}
 			System.out.println("✅ Funds imported successfully!");
-		} catch (Exception e) {
-			System.out.println("❌ Import failed: " + e.getMessage());
-			e.printStackTrace();
-			throw e;
+		} catch (Throwable t) { // <--- CHANGE 'Exception' TO 'Throwable'
+			// This catches OutOfMemoryError, NoClassDefFoundError, etc.
+			System.out.println("❌ CRITICAL FAILURE in Background Thread!");
+			System.out.println("❌ Error type: " + t.getClass().getName());
+			System.out.println("❌ Message: " + t.getMessage());
+			t.printStackTrace();
 		}
+//		}).start();
 
 	}
 }
