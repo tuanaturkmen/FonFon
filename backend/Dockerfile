@@ -1,26 +1,14 @@
-# -------- Stage 1: Build using Maven + JDK 17 --------
-FROM maven:3.9.9-eclipse-temurin-17 AS build
+# Use an official OpenJDK runtime as a parent image
+FROM eclipse-temurin:17-jdk-alpine
 
+# Set the working directory
 WORKDIR /app
 
-# Copy everything (pom.xml + src + Lombok + repos)
-COPY pom.xml .
-COPY src ./src
+# Copy the jar file (Ensure you ran 'mvn package' first)
+COPY target/*.jar app.jar
 
-# Clean cache to avoid issues
-RUN mvn -B -q dependency:go-offline
+# Expose port 8080 (Cloud Run default)
+EXPOSE 8080
 
-# Build with JDK17 inside Docker ONLY
-RUN mvn -B clean package -DskipTests
-
-
-# -------- Stage 2: Run with JRE 17 --------
-FROM eclipse-temurin:17-jre-jammy
-
-WORKDIR /app
-
-# Copy the JAR from the build stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Run the Spring Boot application
-CMD ["java", "-jar", "app.jar"]
+# Run the jar
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -39,21 +39,34 @@ public class FundDataImportService {
 	@Autowired
 	private FundPriceRepository fundPriceRepository;
 
+	int processed = 0, insertedFunds = 0, insertedPrices = 0;
+
 	@Transactional
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
-		// 1. Find the Fund Type (e.g., "INVESTMENT")
-		FundType type = fundTypeRepository.findByName(fundTypeName)
-				.orElseThrow(() -> new IllegalArgumentException("Fund type not found: " + fundTypeName));
 
+		// 1. Find the Fund Type (e.g., "INVESTMENT")
+		FundType type = fundTypeRepository.findByName(fundTypeName).orElseGet(() -> {
+			System.out.println("⚠️ FundType '" + fundTypeName + "' not found. Creating it...");
+			FundType newType = new FundType();
+			newType.setName(fundTypeName); // Assuming FundType has a setName method
+			return fundTypeRepository.save(newType);
+		});
+
+		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
 		InputStream is = excelFile.getInputStream();
 
 		// Pass 'is' to Apache POI
 		Workbook workbook = new XSSFWorkbook(is);
 		Sheet sheet = workbook.getSheetAt(0);
+		int rows = 0;
 
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0)
 				continue; // Skip Header
+
+			if (++rows % 500 == 0) {
+				System.out.println("…processed " + rows + " rows");
+			}
 
 			// --- A. Read Basic Info ---
 			String code = getStringValue(row.getCell(1));
@@ -69,6 +82,7 @@ public class FundDataImportService {
 				f.setCode(code);
 				f.setName(name);
 				f.setType(type);
+				insertedFunds++;
 				return fundRepository.save(f);
 			});
 
@@ -98,11 +112,16 @@ public class FundDataImportService {
 					fp.setCirculatingUnits(units); // Maps to 'circulating_units'
 					fp.setInvestorCount(investors); // Maps to 'investor_count'
 					fp.setTotalValue(totalVal);
-
+					insertedPrices++;
 					fundPriceRepository.save(fp);
 				}
+				processed++;
 			}
 		}
+
+		System.out.println("📊 Total processed rows=" + rows);
+		System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
+				+ insertedPrices);
 
 		workbook.close();
 	}

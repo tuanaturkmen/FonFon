@@ -20,6 +20,7 @@ import backend.service.dataService.entity.PortfolioFund;
 import backend.service.dataService.repository.FundPriceRepository;
 import backend.service.dataService.repository.FundRepository;
 import backend.service.dataService.repository.PortfolioRepository;
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 
@@ -56,6 +57,7 @@ public class PortfolioService {
 		Portfolio portfolio = new Portfolio();
 		portfolio.setUserId(request.getUserId());
 		portfolio.setName(request.getName());
+		portfolio.setTotalAmount(request.getTotalAmount());
 
 		List<PortfolioFund> pfEntities = new ArrayList<>();
 
@@ -98,6 +100,48 @@ public class PortfolioService {
 		return toDto(saved, request.getTotalAmount());
 	}
 
+	public List<PortfolioForUI> getPortfoliosByUser(Long userId) {
+		List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
+		List<PortfolioForUI> result = new ArrayList<>();
+
+		for (Portfolio p : portfolios) {
+			/*
+			 * PortfolioForUI dto = new PortfolioForUI(); dto.setId(p.getId());
+			 * dto.setUserId(p.getUserId()); dto.setName(p.getName());
+			 * dto.setTotalAmount(p.getTotalAmount());
+			 * 
+			 * // Map portfolio_funds → DTO funds List<PortfolioForUI.PortfolioFundForUI>
+			 * fundDtos = new ArrayList<>(); if (p.getFunds() != null) {
+			 * p.getFunds().forEach(pf -> { PortfolioForUI.PortfolioFundForUI fDto = new
+			 * PortfolioForUI.PortfolioFundForUI();
+			 * fDto.setFundCode(pf.getFund().getCode());
+			 * fDto.setFundName(pf.getFund().getName());
+			 * fDto.setAllocationPercent(pf.getAllocationPercent());
+			 * fDto.setOwnedUnits(pf.getOwnedUnits());
+			 * 
+			 * Fund fund = pf.getFund(); BigDecimal currentValue = null; var latestOpt =
+			 * fundPriceRepository.findFirstByFundOrderByDateDesc(fund); if
+			 * (latestOpt.isPresent() && latestOpt.get().getPrice() != null &&
+			 * pf.getOwnedUnits() != null) {
+			 * 
+			 * BigDecimal latestPrice = latestOpt.get().getPrice();
+			 * 
+			 * // currentValue = ownedUnits * latestPrice currentValue =
+			 * pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP);
+			 * // 2 // digits // like // money }
+			 * 
+			 * fDto.setCurrentValue(currentValue);
+			 * 
+			 * fundDtos.add(fDto); }); }
+			 * 
+			 * dto.setFunds(fundDtos); result.add(dto);
+			 */
+			result.add(toDto(p, p.getTotalAmount()));
+		}
+
+		return result;
+	}
+
 	private PortfolioForUI toDto(Portfolio portfolio, BigDecimal totalAmount) {
 		PortfolioForUI dto = new PortfolioForUI();
 		dto.setId(portfolio.getId());
@@ -116,20 +160,41 @@ public class PortfolioService {
 			fDto.setAllocationPercent(pf.getAllocationPercent());
 			fDto.setOwnedUnits(pf.getOwnedUnits());
 
-			// Optional: compute latest price + marketValue
-			// (you can skip this if you don't need it now)
-			// Assuming fund.getPrices() is not fetched, better to refetch latest price:
-			FundPrice latestPrice = fundPriceRepository.findFirstByFundOrderByDateDesc(fund).orElse(null);
-			if (latestPrice != null && latestPrice.getPrice() != null) {
-				fDto.setLatestPrice(latestPrice.getPrice());
-				fDto.setMarketValue(
-						pf.getOwnedUnits().multiply(latestPrice.getPrice()).setScale(2, RoundingMode.HALF_UP));
+			BigDecimal currentValue = null;
+			var latestOpt = fundPriceRepository.findFirstByFundOrderByDateDesc(fund);
+			if (latestOpt.isPresent() && latestOpt.get().getPrice() != null && pf.getOwnedUnits() != null) {
+
+				BigDecimal latestPrice = latestOpt.get().getPrice();
+
+				// currentValue = ownedUnits * latestPrice
+				currentValue = pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP); // 2
+																											// digits
+																											// like
+																											// money
 			}
+
+			fDto.setCurrentValue(currentValue);
 
 			funds.add(fDto);
 		});
 
 		dto.setFunds(funds);
 		return dto;
+	}
+
+	public void deletePortfolio(Long userId, Long portfolioId) {
+		// Load the portfolio or fail with 404 style
+		Portfolio portfolio = portfolioRepository.findById(portfolioId)
+				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
+
+		// Safety: ensure it belongs to this user
+		if (!portfolio.getUserId().equals(userId)) {
+			throw new IllegalArgumentException("Portfolio does not belong to user: " + userId);
+		}
+
+		// This will also delete PortfolioFund rows because:
+		// - JPA: @OneToMany(cascade = ALL, orphanRemoval = true) (if you have it)
+		// - DB: portfolio_funds has FK portfolio_id ON DELETE CASCADE
+		portfolioRepository.delete(portfolio);
 	}
 }
