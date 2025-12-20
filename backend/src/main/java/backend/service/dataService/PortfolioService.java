@@ -105,37 +105,6 @@ public class PortfolioService {
 		List<PortfolioForUI> result = new ArrayList<>();
 
 		for (Portfolio p : portfolios) {
-			/*
-			 * PortfolioForUI dto = new PortfolioForUI(); dto.setId(p.getId());
-			 * dto.setUserId(p.getUserId()); dto.setName(p.getName());
-			 * dto.setTotalAmount(p.getTotalAmount());
-			 * 
-			 * // Map portfolio_funds → DTO funds List<PortfolioForUI.PortfolioFundForUI>
-			 * fundDtos = new ArrayList<>(); if (p.getFunds() != null) {
-			 * p.getFunds().forEach(pf -> { PortfolioForUI.PortfolioFundForUI fDto = new
-			 * PortfolioForUI.PortfolioFundForUI();
-			 * fDto.setFundCode(pf.getFund().getCode());
-			 * fDto.setFundName(pf.getFund().getName());
-			 * fDto.setAllocationPercent(pf.getAllocationPercent());
-			 * fDto.setOwnedUnits(pf.getOwnedUnits());
-			 * 
-			 * Fund fund = pf.getFund(); BigDecimal currentValue = null; var latestOpt =
-			 * fundPriceRepository.findFirstByFundOrderByDateDesc(fund); if
-			 * (latestOpt.isPresent() && latestOpt.get().getPrice() != null &&
-			 * pf.getOwnedUnits() != null) {
-			 * 
-			 * BigDecimal latestPrice = latestOpt.get().getPrice();
-			 * 
-			 * // currentValue = ownedUnits * latestPrice currentValue =
-			 * pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP);
-			 * // 2 // digits // like // money }
-			 * 
-			 * fDto.setCurrentValue(currentValue);
-			 * 
-			 * fundDtos.add(fDto); }); }
-			 * 
-			 * dto.setFunds(fundDtos); result.add(dto);
-			 */
 			result.add(toDto(p, p.getTotalAmount()));
 		}
 
@@ -151,7 +120,8 @@ public class PortfolioService {
 
 		List<PortfolioFundForUI> funds = new ArrayList<>();
 
-		portfolio.getFunds().forEach(pf -> {
+		BigDecimal currentValueOfPortfolio = BigDecimal.ZERO;
+		for (PortfolioFund pf : portfolio.getFunds()) {
 			Fund fund = pf.getFund();
 
 			PortfolioFundForUI fDto = new PortfolioFundForUI();
@@ -160,24 +130,24 @@ public class PortfolioService {
 			fDto.setAllocationPercent(pf.getAllocationPercent());
 			fDto.setOwnedUnits(pf.getOwnedUnits());
 
-			BigDecimal currentValue = null;
+			BigDecimal currentValue = BigDecimal.ZERO; // Default to ZERO instead of null for safety
+
 			var latestOpt = fundPriceRepository.findFirstByFundOrderByDateDesc(fund);
+
+			// Check if data exists
 			if (latestOpt.isPresent() && latestOpt.get().getPrice() != null && pf.getOwnedUnits() != null) {
-
 				BigDecimal latestPrice = latestOpt.get().getPrice();
-
-				// currentValue = ownedUnits * latestPrice
-				currentValue = pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP); // 2
-																											// digits
-																											// like
-																											// money
+				currentValue = pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP);
 			}
 
 			fDto.setCurrentValue(currentValue);
-
 			funds.add(fDto);
-		});
 
+			// 3. Add to the running total
+			// Because we defaulted currentValue to ZERO above, this is now safe
+			currentValueOfPortfolio = currentValueOfPortfolio.add(currentValue);
+		}
+		dto.setCurrentValue(currentValueOfPortfolio);
 		dto.setFunds(funds);
 		return dto;
 	}

@@ -12,6 +12,7 @@ public class PortfolioForUI {
 	private Long userId;
 	private String name;
 	private BigDecimal totalAmount;
+	private BigDecimal currentValue;
 
 	private List<PortfolioFundForUI> funds;
 
