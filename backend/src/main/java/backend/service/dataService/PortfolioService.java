@@ -2,8 +2,12 @@ package backend.service.dataService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import backend.frontendModels.PortfolioForUI;
 import backend.frontendModels.PortfolioForUI.PortfolioFundForUI;
+import backend.frontendModels.PortfolioValuePointForUI;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest.FundAllocationRequest;
 import backend.service.dataService.entity.Fund;
@@ -166,5 +171,65 @@ public class PortfolioService {
 		// - JPA: @OneToMany(cascade = ALL, orphanRemoval = true) (if you have it)
 		// - DB: portfolio_funds has FK portfolio_id ON DELETE CASCADE
 		portfolioRepository.delete(portfolio);
+	}
+
+	public List<PortfolioValuePointForUI> getPortfolioValuesOverDateRange(Long userId, Long portfolioId,
+			LocalDate startDate, LocalDate endDate) {
+
+		if (endDate.isBefore(startDate)) {
+			throw new IllegalArgumentException("endDate must not be before startDate");
+		}
+
+		// 1️⃣ Load portfolio & ensure it belongs to this user
+		Portfolio portfolio = portfolioRepository.findById(portfolioId)
+				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
+
+		if (!portfolio.getUserId().equals(userId)) {
+			throw new IllegalArgumentException("Portfolio does not belong to user: " + userId);
+		}
+
+		List<PortfolioFund> pfList = portfolio.getFunds();
+		if (pfList == null || pfList.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		// 2️⃣ Map<LocalDate, BigDecimal> to accumulate total value per date
+		// Use TreeMap to keep keys sorted by date
+		Map<LocalDate, BigDecimal> totalsByDate = new TreeMap<>();
+
+		for (PortfolioFund pf : pfList) {
+			Fund fund = pf.getFund();
+			BigDecimal ownedUnits = pf.getOwnedUnits();
+
+			if (fund == null || ownedUnits == null || ownedUnits.compareTo(BigDecimal.ZERO) <= 0) {
+				continue;
+			}
+
+			// Get all prices for this fund in the date range
+			List<FundPrice> prices = fundPriceRepository.findByFundAndDateBetweenOrderByDate(fund, startDate, endDate);
+
+			for (FundPrice fp : prices) {
+				if (fp.getPrice() == null) {
+					continue;
+				}
+
+				LocalDate date = fp.getDate();
+				BigDecimal contribution = ownedUnits.multiply(fp.getPrice()).setScale(2, RoundingMode.HALF_UP); // money-like
+
+				totalsByDate.merge(date, contribution, BigDecimal::add);
+			}
+		}
+
+		// 3️⃣ Convert the map into a sorted list of DTOs
+		List<PortfolioValuePointForUI> result = new ArrayList<>();
+
+		for (Map.Entry<LocalDate, BigDecimal> entry : totalsByDate.entrySet()) {
+			PortfolioValuePointForUI dto = new PortfolioValuePointForUI();
+			dto.setDate(entry.getKey());
+			dto.setTotalValue(entry.getValue());
+			result.add(dto);
+		}
+
+		return result;
 	}
 }
