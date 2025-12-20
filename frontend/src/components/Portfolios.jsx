@@ -3,7 +3,11 @@ import { Grid, Box, Typography, Button } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import PortfolioAnalysisCard from "./PortfolioAnalysisCard";
 
-export default function Portfolios({ portfolios, handleCreatePortfolioClick }) {
+export default function Portfolios({
+  portfolios,
+  handleCreatePortfolioClick,
+  handleDeletePortfolioClick,
+}) {
   return (
     <Box sx={{ p: 3 }}>
       <Box
@@ -35,7 +39,10 @@ export default function Portfolios({ portfolios, handleCreatePortfolioClick }) {
       <Grid container spacing={3}>
         {portfolios.map((portfolio) => (
           <Grid item xs={12} md={12} lg={6} xl={6} key={portfolio.id}>
-            <PortfolioAnalysisCard portfolio={portfolio} />
+            <PortfolioAnalysisCard
+              portfolio={portfolio}
+              onDelete={handleDeletePortfolioClick}
+            />
           </Grid>
         ))}
       </Grid>

@@ -2,59 +2,105 @@ import React, { useState, useEffect } from "react";
 import PortfoliosWelcomer from "../components/PortfoliosWelcomer";
 import PortfolioCreator from "../components/PortfolioCreator";
 import Portfolios from "../components/Portfolios";
-import { getPortfolios, createPortfolio } from "../services/PortfolioService";
+import ToastNotification from "../components/ToastNotification"; // Adjusted path
+import {
+  getPortfolios,
+  createPortfolio,
+  deletePortfolio,
+} from "../services/PortfolioService";
 
 export default function PortfoliosScreen() {
   const [portfolios, setPortfolios] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+
+  const [toast, setToast] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  const handleCloseToast = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setToast({ ...toast, open: false });
+  };
+
+  const showToast = (message, severity = "success") => {
+    setToast({ open: true, message, severity });
+  };
 
   useEffect(() => {
     loadPortfolios();
   }, []);
 
   const loadPortfolios = async () => {
-    const portfolios = await getPortfolios(1);
-    setPortfolios(portfolios);
+    try {
+      const data = await getPortfolios(1);
+      setPortfolios(data);
+    } catch (error) {
+      showToast("Error loading portfolios", "error");
+    }
   };
 
   const handleCreatePortfolioClick = () => {
-    console.log("handleCreatePortfolioClick");
     setIsCreating(true);
   };
 
   const handleBackClick = () => {
-    console.log("handleBackClick");
     setIsCreating(false);
   };
 
   const handleCreateClick = async (portfolioData) => {
-    console.log("handleCreateClick");
-    await createPortfolio(portfolioData);
-    await loadPortfolios();
-    setIsCreating(false);
+    try {
+      await createPortfolio(portfolioData);
+      showToast("Portfolio created successfully!");
+      await loadPortfolios();
+      setIsCreating(false);
+    } catch (error) {
+      showToast("Failed to create portfolio", "error");
+    }
+  };
+
+  const handleDeletePortfolioClick = async (portfolioId) => {
+    try {
+      await deletePortfolio(1, portfolioId);
+      showToast("Portfolio deleted successfully!");
+      await loadPortfolios();
+    } catch (error) {
+      showToast("Failed to delete portfolio", "error");
+    }
   };
 
   return (
     <>
-      {portfolios.length == 0 && !isCreating && (
+      {portfolios.length === 0 && !isCreating && (
         <PortfoliosWelcomer
           handleCreatePortfolioClick={handleCreatePortfolioClick}
-        ></PortfoliosWelcomer>
+        />
       )}
 
       {portfolios.length > 0 && !isCreating && (
         <Portfolios
           portfolios={portfolios}
           handleCreatePortfolioClick={handleCreatePortfolioClick}
-        ></Portfolios>
+          handleDeletePortfolioClick={handleDeletePortfolioClick}
+        />
       )}
 
       {isCreating && (
         <PortfolioCreator
           handleBackClick={handleBackClick}
           handleCreateClick={handleCreateClick}
-        ></PortfolioCreator>
+        />
       )}
+
+      <ToastNotification
+        open={toast.open}
+        message={toast.message}
+        severity={toast.severity}
+        onClose={handleCloseToast}
+      />
     </>
   );
 }
