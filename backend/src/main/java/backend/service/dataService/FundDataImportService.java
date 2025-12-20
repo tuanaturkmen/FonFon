@@ -42,7 +42,6 @@ public class FundDataImportService {
 	int processed = 0, insertedFunds = 0, insertedPrices = 0;
 
 	public void importFundsFromExcel(String fundTypeName) throws Exception {
-		System.out.println("IMPORT THREAD = " + Thread.currentThread().getName());
 		processed = 0;
 		insertedFunds = 0;
 		insertedPrices = 0;
@@ -55,7 +54,8 @@ public class FundDataImportService {
 			return fundTypeRepository.save(newType);
 		});
 
-		System.out.println("Excel file exists? " + excelFile.exists() + " | " + excelFile);
+		System.out
+				.println("Excel file" + excelFile.getFilename() + " exists? " + excelFile.exists() + " | " + excelFile);
 		long t0 = System.currentTimeMillis();
 		System.out.println("IMPORT: opening InputStream...");
 		InputStream is = excelFile.getInputStream();

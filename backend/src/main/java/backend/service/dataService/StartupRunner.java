@@ -51,7 +51,7 @@ public class StartupRunner implements CommandLineRunner {
 //		new Thread(() -> {
 		try {
 			if (importEnabled) {
-				System.out.println("Starting import from branch deploy-gcp...");
+				System.out.println("Starting import...");
 				long t0 = System.currentTimeMillis();
 				System.out.println(
 						"IMPORT: about to call importFundsFromExcel, thread=" + Thread.currentThread().getName());
