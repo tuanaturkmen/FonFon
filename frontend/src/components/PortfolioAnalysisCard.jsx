@@ -28,12 +28,12 @@ const COLORS = [
   "#f50057",
 ];
 
-export default function PortfolioAnalysisCard({ portfolio, onDelete }) {
+export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
   // State for the popup
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const initial = portfolio.totalAmount || 0;
-  const current = portfolio.totalAmount || 0;
+  const current = portfolio.currentValue || 0;
   const diff = current - initial;
   const percentChange = initial !== 0 ? ((diff / initial) * 100).toFixed(2) : 0;
   const isProfit = diff >= 0;
@@ -57,6 +57,9 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete }) {
   const handleConfirmDelete = () => {
     onDelete(portfolio.id);
     setIsDialogOpen(false);
+  };
+  const handleViewMore = () => {
+    onView(portfolio);
   };
 
   return (
@@ -248,8 +251,9 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete }) {
                 bgcolor: "rgba(41, 121, 255, 0.05)",
               },
             }}
+            onClick={() => handleViewMore(portfolio)}
           >
-            Analysis Details
+            View More
           </Button>
         </CardActions>
       </Card>

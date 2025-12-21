@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import PortfoliosWelcomer from "../components/PortfoliosWelcomer";
 import PortfolioCreator from "../components/PortfolioCreator";
 import Portfolios from "../components/Portfolios";
-import ToastNotification from "../components/ToastNotification"; // Adjusted path
+import PortfolioDetailView from "../components/PortfolioDetailView";
+import ToastNotification from "../components/ToastNotification";
 import {
   getPortfolios,
   createPortfolio,
@@ -12,6 +13,7 @@ import {
 export default function PortfoliosScreen() {
   const [portfolios, setPortfolios] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [focusedPortfolio, setFocusedPortfolio] = useState(null);
 
   const [toast, setToast] = useState({
     open: false,
@@ -72,28 +74,39 @@ export default function PortfoliosScreen() {
     }
   };
 
+  const handleViewMoreClick = (portfolio) => {
+    setFocusedPortfolio(portfolio);
+  };
+
+  const handleBackFromViewPortfolio = () => {
+    setFocusedPortfolio(null);
+  };
+
   return (
     <>
-      {portfolios.length === 0 && !isCreating && (
-        <PortfoliosWelcomer
-          handleCreatePortfolioClick={handleCreatePortfolioClick}
-        />
-      )}
-
-      {portfolios.length > 0 && !isCreating && (
-        <Portfolios
-          portfolios={portfolios}
-          handleCreatePortfolioClick={handleCreatePortfolioClick}
-          handleDeletePortfolioClick={handleDeletePortfolioClick}
-        />
-      )}
-
-      {isCreating && (
+      {isCreating ? (
         <PortfolioCreator
           handleBackClick={handleBackClick}
           handleCreateClick={handleCreateClick}
         />
+      ) : portfolios.length === 0 ? (
+        <PortfoliosWelcomer
+          handleCreatePortfolioClick={handleCreatePortfolioClick}
+        />
+      ) : (
+        <Portfolios
+          portfolios={portfolios}
+          handleCreatePortfolioClick={handleCreatePortfolioClick}
+          handleDeletePortfolioClick={handleDeletePortfolioClick}
+          handleViewMoreClick={handleViewMoreClick}
+        />
       )}
+
+      <PortfolioDetailView
+        open={Boolean(focusedPortfolio)}
+        portfolio={focusedPortfolio}
+        onClose={() => setFocusedPortfolio(null)}
+      />
 
       <ToastNotification
         open={toast.open}
