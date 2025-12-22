@@ -122,6 +122,7 @@ public class PortfolioService {
 		dto.setUserId(portfolio.getUserId());
 		dto.setName(portfolio.getName());
 		dto.setTotalAmount(totalAmount);
+		dto.setCreationTime(portfolio.getCreationTime());
 
 		List<PortfolioFundForUI> funds = new ArrayList<>();
 

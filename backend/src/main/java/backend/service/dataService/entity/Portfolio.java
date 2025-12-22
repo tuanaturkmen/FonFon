@@ -1,7 +1,7 @@
 package backend.service.dataService.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,8 +31,8 @@ public class Portfolio {
 	@Column(nullable = false)
 	private String name;
 
-	@Column(name = "created_at", insertable = false, updatable = false)
-	private LocalDateTime createdAt;
+	@Column(name = "creation_time", nullable = false)
+	private LocalDate creationTime;
 
 	@OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PortfolioFund> funds = new ArrayList<>();
