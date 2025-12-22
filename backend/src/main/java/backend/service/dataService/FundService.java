@@ -109,9 +109,9 @@ public class FundService {
 	// ---------- 3) All funds in a date range (you already had a good query)
 	// ----------
 
-	public List<FundForUI> getFundsForUIByDateRange(LocalDate startDate, LocalDate endDate) {
+	public List<FundForUI> getFundsForUIByDateRange(LocalDate date) {
 		// Assumes this query already does JOIN FETCH fund and type
-		List<FundPrice> prices = fundPriceRepository.findByDateRangeWithFund(startDate, endDate);
+		List<FundPrice> prices = fundPriceRepository.findByDateWithFund(date);
 		List<FundForUI> result = new ArrayList<>(prices.size());
 
 		for (FundPrice fp : prices) {

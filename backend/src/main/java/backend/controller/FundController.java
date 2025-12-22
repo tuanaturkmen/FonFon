@@ -30,13 +30,12 @@ public class FundController {
 		return ResponseEntity.ok(funds);
 	}
 
-	// GET /api/funds/history?startDate=2025-11-17&endDate=2025-11-19
-	@GetMapping("/funds/history")
-	public ResponseEntity<List<FundForUI>> getFundsByDateRange(
-			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+	// GET /api/funds?date=2025-11-17
+	@GetMapping("/funds/")
+	public ResponseEntity<List<FundForUI>> getFundsByDate(
+			@RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-		List<FundForUI> funds = fundService.getFundsForUIByDateRange(startDate, endDate);
+		List<FundForUI> funds = fundService.getFundsForUIByDateRange(date);
 		return ResponseEntity.ok(funds);
 	}
 

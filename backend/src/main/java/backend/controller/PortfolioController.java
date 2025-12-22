@@ -37,7 +37,8 @@ public class PortfolioController {
 //    		{ "fundCode": "AAK", "allocationPercent": 50.0 },
 //    		{ "fundCode": "BBF", "allocationPercent": 30.0 },
 //    		{ "fundCode": "CEY", "allocationPercent": 20.0 }
-// 	 	]
+// 	 	],
+//      "creationTime": "2025-11-17"	
 //}
 	@PostMapping
 	public ResponseEntity<PortfolioForUI> createPortfolio(@RequestBody CreatePortfolioRequest request) {

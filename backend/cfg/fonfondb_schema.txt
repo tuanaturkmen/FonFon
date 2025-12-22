@@ -37,7 +37,8 @@ CREATE TABLE portfolios (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT now()
+    creation_time DATE NOT NULL,
+    total_amount NUMERIC(18,2)
 );
 
 CREATE TABLE portfolio_funds (

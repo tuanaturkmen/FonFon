@@ -18,10 +18,15 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 
 	Optional<FundPrice> findFirstByFundOrderByDateDesc(Fund fund);
 
-	@Query("SELECT fp " + "FROM FundPrice fp " + "JOIN FETCH fp.fund f " + "LEFT JOIN FETCH f.type t "
-			+ "WHERE fp.date BETWEEN :startDate AND :endDate " + "ORDER BY f.code, fp.date")
-	List<FundPrice> findByDateRangeWithFund(@Param("startDate") LocalDate startDate,
-			@Param("endDate") LocalDate endDate);
+	@Query("""
+			  SELECT fp
+			  FROM FundPrice fp
+			  JOIN FETCH fp.fund f
+			  LEFT JOIN FETCH f.type t
+			  WHERE fp.date = :date
+			  ORDER BY f.code
+			""")
+	List<FundPrice> findByDateWithFund(@Param("date") LocalDate date);
 
 	boolean existsByFundAndDate(Fund fund, LocalDate date);
 
