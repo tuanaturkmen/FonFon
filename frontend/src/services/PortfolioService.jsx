@@ -21,4 +21,20 @@ export const deletePortfolio = async (userId, portfolioId) => {
   console.log(res);
 };
 
-export const updatePortfolio = async () => {};
+export const getPortfolioHistory = async (
+  userId,
+  portfolioId,
+  startDate,
+  endDate
+) => {
+  const res = await axios.get(
+    `${BASE_URL}/portfolios/user/${userId}/${portfolioId}/values`,
+    {
+      params: {
+        startDate: startDate,
+        endDate: endDate,
+      },
+    }
+  );
+  return res.data;
+};
