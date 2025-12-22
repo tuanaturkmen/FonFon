@@ -193,7 +193,7 @@ export default function PortfolioCreator({
   };
   const handleDateChange = async (e) => {
     setCreationDate(e.target.value);
-    const res = await getAllFundsByDate(creationDate);
+    const res = await getAllFundsByDate(e.target.value);
     if (res && res.length != 0) {
       setAllFunds(res);
     }
@@ -444,7 +444,7 @@ export default function PortfolioCreator({
                     userId: 1,
                     name: portfolioName,
                     totalAmount: parseFloat(totalAmount),
-                    creationDate: creationDate,
+                    creationTime: creationDate,
                     allocations: funds.map((fund) => ({
                       fundCode: fund.code,
                       allocationPercent: fund.percent,

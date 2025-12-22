@@ -1,6 +1,7 @@
 package backend.frontendModels.RequestModels;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import lombok.Data;
@@ -11,6 +12,7 @@ public class CreatePortfolioRequest {
 	private Long userId;
 	private String name;
 	private BigDecimal totalAmount; // total money to invest
+	private LocalDate creationTime;
 
 	private List<FundAllocationRequest> allocations;
 

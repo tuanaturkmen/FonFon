@@ -28,6 +28,16 @@ public interface FundPriceRepository extends JpaRepository<FundPrice, Integer> {
 			""")
 	List<FundPrice> findByDateWithFund(@Param("date") LocalDate date);
 
+	@Query("""
+			  SELECT fp
+			  FROM FundPrice fp
+			  JOIN FETCH fp.fund f
+			  LEFT JOIN FETCH f.type t
+			  WHERE fp.date = :date
+			    AND f.code = :code
+			""")
+	Optional<FundPrice> findOneByCodeAndDateWithFund(@Param("code") String code, @Param("date") LocalDate date);
+
 	boolean existsByFundAndDate(Fund fund, LocalDate date);
 
 	List<FundPrice> findByFundAndDateBetweenOrderByDate(Fund fund, LocalDate startDate, LocalDate endDate);

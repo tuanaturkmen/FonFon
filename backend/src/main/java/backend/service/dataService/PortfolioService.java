@@ -60,6 +60,7 @@ public class PortfolioService {
 
 		// 2) Create Portfolio entity
 		Portfolio portfolio = new Portfolio();
+		portfolio.setCreationTime(request.getCreationTime());
 		portfolio.setUserId(request.getUserId());
 		portfolio.setName(request.getName());
 		portfolio.setTotalAmount(request.getTotalAmount());
@@ -72,8 +73,22 @@ public class PortfolioService {
 			Fund fund = fundRepository.findByCode(alloc.getFundCode()).orElseThrow(
 					() -> new IllegalArgumentException("Fund not found with code: " + alloc.getFundCode()));
 
-			FundPrice latestPrice = fundPriceRepository.findFirstByFundOrderByDateDesc(fund)
-					.orElseThrow(() -> new IllegalArgumentException("No price data for fund: " + fund.getCode()));
+//			FundPrice latestPrice = fundPriceRepository.findFirstByFundOrderByDateDesc(fund)
+//					.orElseThrow(() -> new IllegalArgumentException("No price data for fund: " + fund.getCode())); // TODO
+//																													// not
+//																													// according
+//																													// to
+//																													// latest
+//																													// date
+
+			FundPrice latestPrice = fundPriceRepository
+					.findOneByCodeAndDateWithFund(fund.getCode(), request.getCreationTime())
+					.orElseThrow(() -> new IllegalArgumentException("No price data for fund: " + fund.getCode())); // TODO
+																													// not
+																													// according
+																													// to
+																													// latest
+																													// date
 
 			BigDecimal price = latestPrice.getPrice();
 			if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
@@ -129,6 +144,7 @@ public class PortfolioService {
 		BigDecimal currentValueOfPortfolio = BigDecimal.ZERO;
 		for (PortfolioFund pf : portfolio.getFunds()) {
 			Fund fund = pf.getFund();
+			System.err.println("Fund : " + fund.getCode());
 
 			PortfolioFundForUI fDto = new PortfolioFundForUI();
 			fDto.setFundCode(fund.getCode());
@@ -144,6 +160,7 @@ public class PortfolioService {
 			if (latestOpt.isPresent() && latestOpt.get().getPrice() != null && pf.getOwnedUnits() != null) {
 				BigDecimal latestPrice = latestOpt.get().getPrice();
 				currentValue = pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP);
+				System.err.println("Fund currentValue: " + latestPrice + " " + pf.getOwnedUnits() + " " + currentValue);
 			}
 
 			fDto.setCurrentValue(currentValue);
