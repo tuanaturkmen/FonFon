@@ -1,10 +1,19 @@
 import axios from "axios";
 
-// const BASE_URL = "http://192.168.1.12:8080/api";
+//   const BASE_URL = "http://172.20.10.13:8080/api";
 const BASE_URL = "https://fonfon-1045759541438.europe-west6.run.app/api";
 
 export const getAllFunds = async () => {
   const res = await axios.get(`${BASE_URL}/funds`);
+  return res.data;
+};
+
+export const getAllFundsByDate = async (date) => {
+  const res = await axios.get(`${BASE_URL}/funds/`, {
+    params: {
+      date: date,
+    },
+  });
   return res.data;
 };
 

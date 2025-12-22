@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   createTheme,
   ThemeProvider,
@@ -14,8 +14,12 @@ import {
   IconButton,
   Stack,
   Button,
+  InputAdornment,
 } from "@mui/material";
 
+import { getAllFunds, getAllFundsByDate } from "../services/FundService";
+
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import FundList from "./FundList";
 
@@ -100,29 +104,53 @@ export default function PortfolioCreator({
   handleCreateClick,
 }) {
   const [funds, setFunds] = useState([]);
-
+  const [allFunds, setAllFunds] = useState([]);
   const [portfolioName, setPortfolioName] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
+  const [creationDate, setCreationDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [errors, setErrors] = useState({ name: "", amount: "" });
 
   const totalAllocation = funds.reduce((acc, fund) => acc + fund.percent, 0);
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    const res = await getAllFunds();
+    if (res) {
+      setAllFunds(res);
+    }
+  };
 
   const validate = () => {
     let tempErrors = {};
     let isValid = true;
 
+    // Portfolio Name Check
     if (!portfolioName.trim()) {
       tempErrors.name = "Portfolio name is required.";
       isValid = false;
     }
 
+    // Amount Check
     const cleanAmount = totalAmount.toString();
     if (!cleanAmount || isNaN(cleanAmount) || parseFloat(cleanAmount) <= 0) {
       tempErrors.amount = "Please enter a valid investment amount.";
       isValid = false;
     }
 
-    if (funds.some((f) => f.percent <= 0)) {
+    // Future Date Check
+    const today = new Date().toISOString().split("T")[0]; // Gets "YYYY-MM-DD"
+    if (creationDate > today) {
+      tempErrors.date = "Date cannot be in the future.";
+      isValid = false;
+    }
+
+    // Funds Check
+    if (funds.length === 0 || funds.some((f) => f.percent <= 0)) {
       tempErrors.funds = "error";
       isValid = false;
     }
@@ -137,7 +165,6 @@ export default function PortfolioCreator({
       .reduce((acc, f) => acc + f.percent, 0);
 
     const maxAllowed = 100 - otherFundsTotal;
-
     const validValue = Math.min(newValue, maxAllowed);
 
     setFunds(
@@ -159,9 +186,17 @@ export default function PortfolioCreator({
       ...funds,
       {
         code: newFund.code,
+        name: newFund.name,
         percent: 0,
       },
     ]);
+  };
+  const handleDateChange = async (e) => {
+    setCreationDate(e.target.value);
+    const res = await getAllFundsByDate(creationDate);
+    if (res && res.length != 0) {
+      setAllFunds(res);
+    }
   };
 
   return (
@@ -180,10 +215,11 @@ export default function PortfolioCreator({
         </Box>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} lg={8}>
+          {/* LEFT COLUMN: Changed from lg={8} to lg={7} */}
+          <Grid item xs={12} lg={2}>
             <Paper sx={{ p: 3, mb: 2 }}>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={4}>
                   <Typography
                     variant="subtitle2"
                     sx={{ mb: 1, color: "text.secondary" }}
@@ -204,7 +240,7 @@ export default function PortfolioCreator({
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={4}>
                   <Typography
                     variant="subtitle2"
                     sx={{ mb: 1, color: "text.secondary" }}
@@ -222,6 +258,32 @@ export default function PortfolioCreator({
                     onChange={(e) => {
                       setTotalAmount(e.target.value);
                       if (errors.amount) setErrors({ ...errors, amount: "" });
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, color: "text.secondary" }}
+                  >
+                    Creation Date
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    size="small"
+                    value={creationDate}
+                    error={!!errors.date}
+                    helperText={errors.date}
+                    onChange={handleDateChange}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CalendarTodayIcon
+                            sx={{ fontSize: 18, color: "#2979ff" }}
+                          />
+                        </InputAdornment>
+                      ),
                     }}
                   />
                 </Grid>
@@ -263,7 +325,9 @@ export default function PortfolioCreator({
                   color="text.secondary"
                   sx={{ mt: 0.5, display: "block" }}
                 >
-                  Allocate 100% to create portfolio
+                  {totalAllocation === 100
+                    ? "Perfect! Ready to create."
+                    : "Allocate 100% to create portfolio"}
                 </Typography>
               </Box>
 
@@ -278,8 +342,9 @@ export default function PortfolioCreator({
                   {funds.map((fund) => {
                     const hasError = errors.funds && fund.percent === 0;
                     return (
+                      // Changed key to fund.code
                       <Paper
-                        key={fund.id}
+                        key={fund.code}
                         elevation={0}
                         sx={{
                           p: 2,
@@ -362,9 +427,7 @@ export default function PortfolioCreator({
                 color="inherit"
                 size="large"
                 sx={{ minWidth: 100, borderColor: "#334155" }}
-                onClick={() => {
-                  handleBackClick();
-                }}
+                onClick={handleBackClick}
               >
                 Back
               </Button>
@@ -372,7 +435,8 @@ export default function PortfolioCreator({
                 variant="contained"
                 size="large"
                 sx={{ minWidth: 140 }}
-                disabled={totalAllocation != 100}
+                // Changed condition to !== 100
+                disabled={totalAllocation !== 100}
                 onClick={() => {
                   if (!validate()) return;
 
@@ -380,6 +444,7 @@ export default function PortfolioCreator({
                     userId: 1,
                     name: portfolioName,
                     totalAmount: parseFloat(totalAmount),
+                    creationDate: creationDate,
                     allocations: funds.map((fund) => ({
                       fundCode: fund.code,
                       allocationPercent: fund.percent,
@@ -394,9 +459,14 @@ export default function PortfolioCreator({
             </Stack>
           </Grid>
 
-          <Grid item xs={12} lg={4}>
+          {/* RIGHT COLUMN: Changed from lg={4} to lg={5} */}
+          <Grid item xs={12} lg={10}>
             <Box sx={{ height: "100%" }}>
-              <FundList onAddFund={handleAddFund} currentPortfolio={funds} />
+              <FundList
+                onAddFund={handleAddFund}
+                currentPortfolio={funds}
+                allFunds={allFunds}
+              />
             </Box>
           </Grid>
         </Grid>

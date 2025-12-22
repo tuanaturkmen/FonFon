@@ -18,28 +18,19 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
-import { getAllFunds } from "../services/FundService";
 
 const headerStyle = { bgcolor: "#131b28", borderBottom: "1px solid #334155" };
 
-export default function FundList({ onAddFund, currentPortfolio = [] }) {
+export default function FundList({
+  onAddFund,
+  currentPortfolio = [],
+  allFunds,
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [allFunds, setAllFunds] = useState([]);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  const loadInitialData = async () => {
-    const res = await getAllFunds();
-    if (res) {
-      setAllFunds(res);
-    }
-  };
-
-  const filteredFunds = allFunds.filter((fund) => {
+  const filteredFunds = allFunds?.filter((fund) => {
     const matchesSearch = fund.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -52,7 +43,7 @@ export default function FundList({ onAddFund, currentPortfolio = [] }) {
     setPage(0);
   };
 
-  const visibleFunds = filteredFunds.slice(
+  const visibleFunds = filteredFunds?.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -121,7 +112,7 @@ export default function FundList({ onAddFund, currentPortfolio = [] }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {visibleFunds.map((fund) => {
+            {visibleFunds?.map((fund) => {
               const isAdded = currentPortfolio.some(
                 (p) => p.code === fund.code
               );
@@ -231,7 +222,7 @@ export default function FundList({ onAddFund, currentPortfolio = [] }) {
                 </TableRow>
               );
             })}
-            {visibleFunds.length < rowsPerPage && (
+            {visibleFunds?.length < rowsPerPage && (
               <TableRow
                 style={{ height: 53 * (rowsPerPage - visibleFunds.length) }}
               >
@@ -244,7 +235,7 @@ export default function FundList({ onAddFund, currentPortfolio = [] }) {
 
       <TablePagination
         component="div"
-        count={filteredFunds.length}
+        count={filteredFunds?.length}
         page={page}
         onPageChange={handleChangePage}
         rowsPerPage={rowsPerPage}

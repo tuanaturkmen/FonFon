@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// const BASE_URL = "http://192.168.1.12:8080/api";
+// const BASE_URL = "http://172.20.10.13:8080/api";
 const BASE_URL = "https://fonfon-1045759541438.europe-west6.run.app/api";
 
 export const getPortfolios = async (userId) => {
