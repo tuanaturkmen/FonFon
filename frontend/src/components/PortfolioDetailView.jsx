@@ -104,13 +104,12 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
       PaperProps={{
         sx: {
           width: { xs: "100%", sm: "650px" },
-          backgroundColor: "#0f172a", // Deep slate background
+          backgroundColor: "#0f172a",
           borderLeft: "1px solid #1e293b",
           boxShadow: "-10px 0px 30px rgba(0,0,0,0.5)",
         },
       }}
     >
-      {/* 1. HEADER SECTION */}
       <Box sx={{ p: 3, borderBottom: "1px solid #1e293b", bgcolor: "#111827" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Box>
@@ -137,10 +136,8 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
         </Box>
       </Box>
 
-      {/* 2. SCROLLABLE CONTENT */}
       <Box sx={{ p: 3, overflowY: "auto", height: "100%" }}>
         <Stack spacing={4} sx={{ pb: 10 }}>
-          {/* --- CALCULATE PERFORMANCE CARD --- */}
           <Paper
             sx={{
               p: 3,
@@ -251,8 +248,6 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
               </Grid>
             </Grid>
           </Paper>
-
-          {/* --- THREE STAT BOXES --- */}
           <Grid container spacing={2}>
             <Grid item xs={4}>
               <Paper
@@ -356,8 +351,6 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
               </Paper>
             </Grid>
           </Grid>
-
-          {/* --- PERFORMANCE CHART CARD --- */}
           <Paper
             sx={{
               p: 3,
@@ -451,8 +444,7 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
             </Box>
           </Paper>
 
-          {/* --- COMPOSITION TABLE CARD --- */}
-          {/*
+          {/* TODO
           <Paper
             sx={{
               bgcolor: "#1e293b",

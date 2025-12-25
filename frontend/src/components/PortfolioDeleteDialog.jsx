@@ -18,7 +18,6 @@ export default function PortfolioDeleteDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      // Styling the inner paper to match your card's dark theme
       PaperProps={{
         sx: {
           bgcolor: "#1e293b",
@@ -38,14 +37,13 @@ export default function PortfolioDeleteDialog({
         </DialogContentText>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        {/* Back Button */}
         <Button
           onClick={onClose}
           sx={{ color: "#cbd5e1", textTransform: "none" }}
         >
           Back
         </Button>
-        {/* Confirm Button */}
+
         <Button
           onClick={onConfirm}
           variant="contained"

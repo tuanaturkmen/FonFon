@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Added useState
+import React, { useState } from "react";
 import {
   Grid,
   Card,
@@ -11,13 +11,17 @@ import {
   Button,
   CardActions,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import { PieChart } from "@mui/x-charts/PieChart";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PortfolioDeleteDialog from "./PortfolioDeleteDialog";
+import dayjs from "dayjs";
 
 const COLORS = [
   "#00e676",
@@ -28,8 +32,12 @@ const COLORS = [
   "#f50057",
 ];
 
-export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
-  // State for the popup
+export default function PortfolioAnalysisCard({
+  portfolio,
+  onDelete,
+  onView,
+  onEdit,
+}) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const initial = portfolio.totalAmount || 0;
@@ -44,14 +52,41 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
     minimumFractionDigits: 2,
   });
 
-  const chartData = portfolio.funds.map((fund, index) => ({
-    id: index,
-    value: fund.allocationPercent,
-    label: fund.fundCode,
-    color: COLORS[index % COLORS.length],
-  }));
+  const sortedFunds = [...portfolio.funds].sort(
+    (a, b) => b.allocationPercent - a.allocationPercent
+  );
 
-  // Handle Dialog Actions
+  let chartData = [];
+  if (sortedFunds.length <= 4) {
+    chartData = sortedFunds.map((fund, index) => ({
+      id: index,
+      value: fund.allocationPercent,
+      label: fund.fundCode,
+      color: COLORS[index % COLORS.length],
+    }));
+  } else {
+    const topThree = sortedFunds.slice(0, 3).map((fund, index) => ({
+      id: index,
+      value: fund.allocationPercent,
+      label: fund.fundCode,
+      color: COLORS[index % COLORS.length],
+    }));
+
+    const othersValue = sortedFunds
+      .slice(3)
+      .reduce((acc, fund) => acc + fund.allocationPercent, 0);
+
+    chartData = [
+      ...topThree,
+      {
+        id: 3,
+        value: othersValue,
+        label: "Others",
+        color: "#64748b",
+      },
+    ];
+  }
+
   const handleOpenDialog = () => setIsDialogOpen(true);
   const handleCloseDialog = () => setIsDialogOpen(false);
   const handleConfirmDelete = () => {
@@ -86,35 +121,73 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
             sx={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
+              alignItems: "flex-start",
               mb: 2,
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{ color: "white", fontWeight: "bold", fontSize: "1.1rem" }}
-            >
-              {portfolio.name}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={handleOpenDialog} // Changed to open dialog
-              sx={{
-                color: "#64748b",
-                cursor: "pointer", // Explicitly added as requested
-                "&:hover": {
-                  color: "#ff1744",
-                  bgcolor: "rgba(255, 23, 68, 0.08)",
-                },
-              }}
-            >
-              <DeleteOutlineIcon fontSize="small" />
-            </IconButton>
+            <Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: "white",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                  lineHeight: 1.2,
+                }}
+              >
+                {portfolio.name}
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mt: 0.5,
+                  gap: 0.5,
+                }}
+              >
+                <CalendarTodayIcon sx={{ fontSize: 12, color: "#94a3b8" }} />
+                <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                  {dayjs(portfolio.creationTime).format("DD/MM/YYYY")}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <Tooltip title="Edit Portfolio">
+                <IconButton
+                  size="small"
+                  onClick={() => onEdit(portfolio)}
+                  sx={{
+                    color: "#64748b",
+                    "&:hover": {
+                      color: "#2979ff",
+                      bgcolor: "rgba(41, 121, 255, 0.08)",
+                    },
+                  }}
+                >
+                  <EditOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Delete Portfolio">
+                <IconButton
+                  size="small"
+                  onClick={handleOpenDialog}
+                  sx={{
+                    color: "#64748b",
+                    "&:hover": {
+                      color: "#ff1744",
+                      bgcolor: "rgba(255, 23, 68, 0.08)",
+                    },
+                  }}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
 
-          {/* ... Rest of your existing Grid and PieChart code remains exactly same ... */}
           <Grid container spacing={1} sx={{ mb: 3 }}>
-            {/* [Your existing Grid code] */}
             <Grid item xs={4}>
               <Typography
                 variant="caption"
@@ -165,11 +238,20 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
           </Grid>
 
           <Divider sx={{ borderColor: "#334155", mb: 3 }} />
-          <Grid container alignItems="center" spacing={2}>
-            <Grid item xs={5}>
-              <Box
-                sx={{ height: 110, display: "flex", justifyContent: "center" }}
-              >
+
+          <Grid
+            container
+            alignItems="center"
+            justifyContent="center"
+            spacing={2}
+          >
+            <Grid
+              item
+              xs={12}
+              sm={5}
+              sx={{ display: "flex", justifyContent: "center" }}
+            >
+              <Box sx={{ height: 110, width: 110 }}>
                 <PieChart
                   series={[
                     {
@@ -183,12 +265,15 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
                   height={110}
                   width={110}
                   slotProps={{ legend: { hidden: true } }}
+                  sx={{
+                    "& .MuiChartsLegend-root": { display: "none" },
+                  }}
                 />
               </Box>
             </Grid>
-            <Grid item xs={7}>
-              <Stack spacing={2}>
-                {chartData.slice(0, 3).map((item) => (
+            <Grid item xs={12} sm={7}>
+              <Stack spacing={1.5}>
+                {chartData.map((item) => (
                   <Box key={item.label}>
                     <Box
                       sx={{
@@ -199,7 +284,7 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
                     >
                       <Typography
                         sx={{
-                          color: "white",
+                          color: "#ffffff !important",
                           fontSize: "0.75rem",
                           fontWeight: "bold",
                         }}
@@ -208,7 +293,7 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
                       </Typography>
                       <Typography
                         sx={{
-                          color: "white",
+                          color: "#ffffff !important",
                           fontSize: "0.75rem",
                           fontWeight: "bold",
                         }}
@@ -251,14 +336,13 @@ export default function PortfolioAnalysisCard({ portfolio, onDelete, onView }) {
                 bgcolor: "rgba(41, 121, 255, 0.05)",
               },
             }}
-            onClick={() => handleViewMore(portfolio)}
+            onClick={handleViewMore}
           >
             View More
           </Button>
         </CardActions>
       </Card>
 
-      {/* The Dialog Component */}
       <PortfolioDeleteDialog
         open={isDialogOpen}
         onClose={handleCloseDialog}

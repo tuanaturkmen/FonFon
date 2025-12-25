@@ -32,8 +32,8 @@ export default function FundList({
 
   const filteredFunds = allFunds?.filter((fund) => {
     const matchesSearch = fund.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+      .toLocaleLowerCase("tr-TR")
+      .includes(searchQuery.toLocaleLowerCase("tr-TR"));
     return matchesSearch;
   });
 

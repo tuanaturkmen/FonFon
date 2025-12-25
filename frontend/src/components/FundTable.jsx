@@ -255,7 +255,6 @@ export default function FundTable() {
 
   return (
     <Box sx={{ width: "95%", margin: "0 auto", py: 4 }}>
-      {/* HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -297,7 +296,7 @@ export default function FundTable() {
             disabled={selected.length < 2}
             sx={{
               backgroundColor: "#34D399",
-              "&:hover": { backgroundColor: "#059669" },
+              "&:hover": { backgroundColor: "rgba(5, 150, 105, 1)" },
               "&.Mui-disabled": {
                 backgroundColor: "rgba(255, 255, 255, 0.12)",
                 color: "rgba(255, 255, 255, 0.3)",
@@ -308,8 +307,6 @@ export default function FundTable() {
           </Button>
         </Stack>
       </Box>
-
-      {/* 3. LAYOUT FIX: Reorganized Filter Grid */}
       <Collapse in={showFilters}>
         <Paper
           sx={{
@@ -442,7 +439,7 @@ export default function FundTable() {
                     variant="caption"
                     sx={{ color: "white", mb: 1, display: "block" }}
                   >
-                    Investors
+                    Holders
                   </Typography>
                   <Stack direction="row" spacing={2}>
                     <TextField
@@ -493,7 +490,6 @@ export default function FundTable() {
         </Paper>
       </Collapse>
 
-      {/* TABLE */}
       <TableContainer
         component={Paper}
         sx={{

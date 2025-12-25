@@ -52,7 +52,7 @@ export default function TopFundsCards() {
       try {
         const data = await getTopFunds();
         if (data) {
-          //setTopFunds(data.slice(0, 5));
+          //setTopFunds(data.slice(0, 5)); TODO
         }
       } catch (error) {
         console.error(error);
