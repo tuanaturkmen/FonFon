@@ -21,11 +21,15 @@ public class AuthController {
 		this.authService = authService;
 	}
 
+	// body example:
+	// { "username": "tuana", "email": "tuana@mail.com", "password": "123456" }
 	@PostMapping("/register")
 	public AuthResponse register(@Validated @RequestBody RegisterRequest req) {
 		return new AuthResponse(authService.register(req));
 	}
 
+	// body example
+	// {"login": "tuana2@mail.com", "password": "123456"}
 	@PostMapping("/login")
 	public AuthResponse login(@Validated @RequestBody LoginRequest req) {
 		return new AuthResponse(authService.login(req));
