@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -73,6 +74,27 @@ public class PortfolioController {
 				startDate, endDate);
 
 		return ResponseEntity.ok(values);
+	}
+
+	// PUT /portfolios/7
+	// {
+	// "userId": 1,
+	// "name": "Deneme Portfolio",
+	// "totalAmount": 3000,
+	// "allocations": [
+	// { "fundCode": "AAK", "allocationPercent": 50.0 },
+	// { "fundCode": "BBF", "allocationPercent": 30.0 },
+	// { "fundCode": "CEY", "allocationPercent": 20.0 }
+	// ],
+	// "creationTime": "2025-11-17"
+	// }
+	@PutMapping("/{portfolioId}")
+	public ResponseEntity<PortfolioForUI> updatePortfolio(@PathVariable Long portfolioId,
+			@RequestBody CreatePortfolioRequest request) {
+
+		System.err.println("cALL UPDATE PORTf");
+		PortfolioForUI updated = portfolioService.updatePortfolio(portfolioId, request);
+		return ResponseEntity.ok(updated);
 	}
 
 }
