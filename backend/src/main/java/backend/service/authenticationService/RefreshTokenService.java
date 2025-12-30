@@ -9,6 +9,7 @@ import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import backend.exceptions.UnauthorizedException;
 import backend.service.dataService.entity.RefreshToken;
 import backend.service.dataService.repository.RefreshTokenRepository;
 
@@ -44,35 +45,21 @@ public class RefreshTokenService {
 		RefreshToken rt = repo.findByTokenHash(hash).orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
 		if (rt.isRevoked())
-			throw new RuntimeException("Refresh token revoked");
+			throw new UnauthorizedException("Refresh token revoked");
 		if (rt.getExpiresAt().isBefore(LocalDateTime.now()))
-			throw new RuntimeException("Refresh token expired");
+			throw new UnauthorizedException("Refresh token expired");
 
 		return rt.getUserId();
 	}
 
-//	// rotation (recommended): revoke old and issue a new one
-//	public String rotate(String rawToken) {
-//		String hash = sha256(rawToken);
-//		RefreshToken rt = repo.findByTokenHash(hash).orElseThrow(() -> new RuntimeException("Invalid refresh token"));
-//
-//		if (rt.isRevoked() || rt.getExpiresAt().isBefore(LocalDateTime.now())) {
-//			throw new RuntimeException("Refresh token invalid");
-//		}
-//
-//		rt.setRevoked(true);
-//		repo.save(rt);
-//
-//		return issueRefreshToken(rt.getUserId());
-//	}
-
 	// rotation (recommended): revoke old and issue a new one
 	public RefreshRotation rotate(String rawToken) {
 		String hash = sha256(rawToken);
-		RefreshToken rt = repo.findByTokenHash(hash).orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+		RefreshToken rt = repo.findByTokenHash(hash)
+				.orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
 		if (rt.isRevoked() || rt.getExpiresAt().isBefore(LocalDateTime.now())) {
-			throw new RuntimeException("Refresh token invalid");
+			throw new UnauthorizedException("Refresh token invalid");
 		}
 
 		rt.setRevoked(true);

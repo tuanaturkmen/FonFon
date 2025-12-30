@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import backend.exceptions.ConflictException;
+import backend.exceptions.UnauthorizedException;
 import backend.frontendModels.RequestModels.LoginRequest;
 import backend.frontendModels.RequestModels.RegisterRequest;
 import backend.service.dataService.entity.User;
@@ -25,10 +27,10 @@ public class AuthService {
 
 	public String register(RegisterRequest req) {
 		if (userRepo.existsByEmail(req.getEmail())) {
-			throw new RuntimeException("Email already in use");
+			throw new ConflictException("Email already in use");
 		}
 		if (userRepo.existsByUsername(req.getUsername())) {
-			throw new RuntimeException("Username already in use");
+			throw new ConflictException("Username already in use");
 		}
 
 		User u = new User();
@@ -46,10 +48,10 @@ public class AuthService {
 			userOpt = userRepo.findByUsername(req.getLogin());
 		}
 
-		User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid credentials"));
+		User user = userOpt.orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
 		if (!encoder.matches(req.getPassword(), user.getPasswordHash())) {
-			throw new RuntimeException("Invalid credentials");
+			throw new UnauthorizedException("Invalid credentials");
 		}
 
 		return jwtService.generateAccessToken(user);
