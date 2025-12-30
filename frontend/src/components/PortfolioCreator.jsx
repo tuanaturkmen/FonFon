@@ -20,11 +20,9 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
-
-import { getAllFunds, getAllFundsByDate } from "../services/FundService";
-
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import { getAllFunds, getAllFundsByDate } from "../services/FundService";
 import FundList from "./FundList";
 
 const darkTheme = createTheme({
@@ -106,16 +104,26 @@ const darkTheme = createTheme({
 export default function PortfolioCreator({
   handleBackClick,
   handleCreateClick,
+  portfolio,
 }) {
-  const [funds, setFunds] = useState([]);
   const [allFunds, setAllFunds] = useState([]);
   const [errors, setErrors] = useState({ name: "", amount: "" });
 
-  const [portfolioName, setPortfolioName] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
-  const [creationDate, setCreationDate] = useState("2025-12-19");
+  const [portfolioName, setPortfolioName] = useState(
+    portfolio ? portfolio.name : ""
+  );
+  const [totalAmount, setTotalAmount] = useState(
+    portfolio ? portfolio.totalAmount : ""
+  );
+  const [creationDate, setCreationDate] = useState(
+    portfolio ? portfolio.creationTime : "2025-12-19"
+  );
+  const [funds, setFunds] = useState(portfolio ? portfolio.funds : []);
 
-  const totalAllocation = funds.reduce((acc, fund) => acc + fund.percent, 0);
+  const totalAllocation = funds.reduce(
+    (acc, fund) => acc + fund.allocationPercent,
+    0
+  );
 
   useEffect(() => {
     loadInitialData();
@@ -148,7 +156,7 @@ export default function PortfolioCreator({
       isValid = false;
     }
 
-    if (funds.length === 0 || funds.some((f) => f.percent <= 0)) {
+    if (funds.length === 0 || funds.some((f) => f.allocationPercent <= 0)) {
       tempErrors.funds = "error";
       isValid = false;
     }
@@ -157,25 +165,27 @@ export default function PortfolioCreator({
     return isValid;
   };
 
-  const handleSliderChange = (code, newValue) => {
+  const handleSliderChange = (fundCode, newValue) => {
     const otherFundsTotal = funds
-      .filter((f) => f.code !== code)
-      .reduce((acc, f) => acc + f.percent, 0);
+      .filter((f) => f.fundCode !== fundCode)
+      .reduce((acc, f) => acc + f.allocationPercent, 0);
 
     const maxAllowed = 100 - otherFundsTotal;
     const validValue = Math.min(newValue, maxAllowed);
 
     setFunds(
-      funds.map((f) => (f.code === code ? { ...f, percent: validValue } : f))
+      funds.map((f) =>
+        f.fundCode === fundCode ? { ...f, allocationPercent: validValue } : f
+      )
     );
   };
 
-  const handleDelete = (code) => {
-    setFunds(funds.filter((f) => f.code !== code));
+  const handleDelete = (fundCode) => {
+    setFunds(funds.filter((f) => f.fundCode !== fundCode));
   };
 
   const handleAddFund = (newFund) => {
-    if (funds.some((f) => f.code === newFund.code)) {
+    if (funds.some((f) => f.fundCode === newFund.fundCode)) {
       alert("This fund is already in your portfolio.");
       return;
     }
@@ -183,16 +193,16 @@ export default function PortfolioCreator({
     setFunds([
       ...funds,
       {
-        code: newFund.code,
-        name: newFund.name,
-        percent: 0,
+        fundCode: newFund.fundCode,
+        fundName: newFund.fundName,
+        allocationPercent: 0,
       },
     ]);
   };
 
   const shouldDisableDate = (date) => {
-    const startDate = dayjs("2025-12-15");
-    const endDate = dayjs("2025-12-19");
+    const startDate = dayjs("2025-10-15");
+    const endDate = dayjs("2025-12-25");
 
     return !date.isBetween(startDate, endDate, "day", "[]");
   };
@@ -212,10 +222,10 @@ export default function PortfolioCreator({
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <CssBaseline />
 
-        <Container sx={{ mt: 5, mb: 5, maxWidth: "95% !important" }}>
+        <Container sx={{ mt: 5, mb: 5, maxWidth: "100% !important" }}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-              Create Your Portfolio
+              {portfolio ? "Update Your Portfolio" : "Create Your Portfolio"}
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Build and customize your investment portfolio by selecting from
@@ -353,7 +363,8 @@ export default function PortfolioCreator({
                 >
                   <Stack spacing={2}>
                     {funds.map((fund) => {
-                      const hasError = errors.funds && fund.percent === 0;
+                      const hasError =
+                        errors.funds && fund.allocationPercent === 0;
                       return (
                         <Paper
                           key={fund.code}
@@ -374,20 +385,22 @@ export default function PortfolioCreator({
                         >
                           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Typography variant="subtitle2" noWrap>
-                              {fund.name}
+                              {fund.fundName.length > 30
+                                ? fund.fundName.slice(0, 27) + "..."
+                                : fund.fundName}
                             </Typography>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                             >
-                              {fund.code}
+                              {fund.fundCode}
                             </Typography>
                           </Box>
                           <Box sx={{ width: 140, mr: 2 }}>
                             <Slider
-                              value={fund.percent}
+                              value={fund.allocationPercent}
                               onChange={(e, val) =>
-                                handleSliderChange(fund.code, val)
+                                handleSliderChange(fund.fundCode, val)
                               }
                               size="small"
                               color={hasError ? "error" : "primary"}
@@ -417,10 +430,10 @@ export default function PortfolioCreator({
                               color: hasError ? "#ef5350" : "inherit",
                             }}
                           >
-                            {fund.percent}%
+                            {fund.allocationPercent}%
                           </Typography>
                           <IconButton
-                            onClick={() => handleDelete(fund.code)}
+                            onClick={() => handleDelete(fund.fundCode)}
                             size="small"
                             sx={{ color: "text.secondary" }}
                           >
@@ -460,15 +473,15 @@ export default function PortfolioCreator({
                       totalAmount: parseFloat(totalAmount),
                       creationTime: creationDate,
                       allocations: funds.map((fund) => ({
-                        fundCode: fund.code,
-                        allocationPercent: fund.percent,
+                        fundCode: fund.fundCode,
+                        allocationPercent: fund.allocationPercent,
                       })),
                     };
 
                     handleCreateClick(payload);
                   }}
                 >
-                  Create
+                  {portfolio ? "Update" : "Create"}
                 </Button>
               </Stack>
             </Grid>

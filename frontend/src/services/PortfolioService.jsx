@@ -14,6 +14,12 @@ export const createPortfolio = async (portfolioData) => {
   console.log(res);
 };
 
+export const updatePortfoilo = async (portfolioId, portfolioData) => {
+  console.log("updatePortfoio");
+  const res = await axios.post(`${BASE_URL}/portfolios`, portfolioData); //TODO fix
+  console.log(res);
+};
+
 export const deletePortfolio = async (userId, portfolioId) => {
   const res = await axios.delete(
     `${BASE_URL}/portfolios/user/${userId}/${portfolioId}`

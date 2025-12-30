@@ -114,12 +114,12 @@ export default function FundList({
           <TableBody>
             {visibleFunds?.map((fund) => {
               const isAdded = currentPortfolio.some(
-                (p) => p.code === fund.code
+                (p) => p.fundCode === fund.code
               );
 
               return (
                 <TableRow
-                  key={fund.code}
+                  key={fund.fundCode}
                   sx={{
                     "&:last-child td, &:last-child th": { border: 0 },
                     bgcolor: isAdded ? "rgba(46, 204, 113, 0.15)" : "inherit",
@@ -136,14 +136,16 @@ export default function FundList({
                     sx={{ borderBottom: "1px solid #1e293b", maxWidth: 500 }}
                   >
                     <Box>
-                      <Tooltip title={fund.name} arrow placement="top">
+                      <Tooltip title={fund.fundName} arrow placement="top">
                         <Typography
                           variant="body2"
                           fontWeight="bold"
                           noWrap
                           sx={{ color: isAdded ? "#2ecc71" : "inherit" }}
                         >
-                          {fund.name}
+                          {fund.name.length > 30
+                            ? fund.name.slice(0, 27) + "..."
+                            : fund.name}
                         </Typography>
                       </Tooltip>
                     </Box>
@@ -207,7 +209,14 @@ export default function FundList({
                       </IconButton>
                     ) : (
                       <IconButton
-                        onClick={() => onAddFund(fund)}
+                        onClick={() => {
+                          console.log("Added: " + fund);
+                          const addedFund = {
+                            fundName: fund.name,
+                            fundCode: fund.code,
+                          };
+                          onAddFund(addedFund);
+                        }}
                         size="small"
                         sx={{
                           bgcolor: "rgba(41, 121, 255, 0.1)",

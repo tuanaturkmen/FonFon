@@ -13,13 +13,17 @@ function App() {
     setStarted(true);
   };
 
+  const handleLogout = () => {
+    setStarted(false);
+  };
+
   return (
     <>
       {!started ? (
         <LandingPage handleStart={handleStart}></LandingPage>
       ) : (
         <>
-          <Header page={page} setPage={setPage} />
+          <Header page={page} setPage={setPage} onLogout={handleLogout} />
           {page == 0 && <FundsScreen />}
           {page == 1 && <PortfoliosScreen />}
         </>
