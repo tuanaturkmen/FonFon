@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createTheme, ThemeProvider, CssBaseline, Box } from "@mui/material";
 import FundTable from "../components/FundTable";
 import TopFundsCards from "../components/TopFundsCard";
+import BrandedLoader from "../components/BrandedLoaders";
+import { getTopFunds, getAllFunds } from "../services/FundService";
 
 const darkTheme = createTheme({
   palette: {
@@ -54,16 +56,49 @@ const darkTheme = createTheme({
 });
 
 export default function FundsScreen() {
-  const [page, setPage] = useState(0);
+  const [funds, setFunds] = useState([]);
+  const [topFunds, setTopFunds] = useState([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const loadFundData = async () => {
+      try {
+        const [funds, topFunds] = await Promise.all([
+          getAllFunds(),
+          getTopFunds(),
+        ]);
+
+        setFunds(funds);
+        setTopFunds(topFunds.slice(0, 5));
+        setTimeout(() => {
+          setReady(true);
+        }, 1000);
+      } catch (error) {
+        console.error(error); // TODO: toast
+      }
+    };
+    loadFundData();
+  }, []);
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-
-      {page == 0 && (
-        <Box sx={{ marginTop: 1 }}>
-          <TopFundsCards />
-          <FundTable />
+      {ready ? (
+        <Box sx={{ marginTop: 2 }}>
+          <TopFundsCards topFunds={topFunds} />
+          <FundTable funds={funds} />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            height: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <BrandedLoader message={"Loading Funds.."}></BrandedLoader>
         </Box>
       )}
     </ThemeProvider>

@@ -49,8 +49,8 @@ const LandingPage = ({ handleStart }) => {
         sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
         <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 15 }, pb: 8 }}>
-          <Grid container spacing={20} alignItems="center">
-            <Grid item xs={12} md={7}>
+          <Grid container spacing={15} alignItems="center">
+            <Grid item>
               <Box display="flex" alignItems="center" gap={1.5} mb={4}>
                 <DonutSmallIcon sx={{ color: "#10B981", fontSize: 64 }} />
                 <Typography
@@ -153,7 +153,7 @@ const LandingPage = ({ handleStart }) => {
               </Grid>
             </Grid>
 
-            <Grid item xs={12} md={5}>
+            <Grid item>
               <Paper
                 elevation={24}
                 sx={{
