@@ -45,7 +45,7 @@ public class PortfolioService {
 	private EntityManager entityManager;
 
 	@Transactional
-	public PortfolioForUI createPortfolio(CreatePortfolioRequest request) {
+	public PortfolioForUI createPortfolio(CreatePortfolioRequest request, Long userId) {
 
 		// 1) Basic validation
 		if (request.getAllocations() == null || request.getAllocations().isEmpty()) {
@@ -67,7 +67,7 @@ public class PortfolioService {
 		// 2) Create Portfolio entity
 		Portfolio portfolio = new Portfolio();
 		portfolio.setCreationTime(request.getCreationTime());
-		portfolio.setUserId(request.getUserId());
+		portfolio.setUserId(userId);
 		portfolio.setName(request.getName());
 		portfolio.setTotalAmount(request.getTotalAmount());
 
@@ -249,15 +249,15 @@ public class PortfolioService {
 	}
 
 	@Transactional
-	public PortfolioForUI updatePortfolio(Long portfolioId, CreatePortfolioRequest request) {
+	public PortfolioForUI updatePortfolio(Long portfolioId, CreatePortfolioRequest request, Long userId) {
 
 		// Load portfolio and validate user
 		Portfolio portfolio = portfolioRepository.findById(portfolioId)
 				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
 
 		// Optional safety: ensure the incoming userId matches portfolio owner
-		if (!portfolio.getUserId().equals(request.getUserId())) {
-			throw new IllegalArgumentException("Portfolio does not belong to user: " + request.getUserId());
+		if (!portfolio.getUserId().equals(userId)) {
+			throw new IllegalArgumentException("Portfolio does not belong to user: " + userId);
 		}
 
 		// Update basic fields
