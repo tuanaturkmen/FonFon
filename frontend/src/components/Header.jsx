@@ -9,8 +9,9 @@ import {
 } from "@mui/material";
 
 import DonutSmallIcon from "@mui/icons-material/DonutSmall";
+import UserMenu from "./UserMenu";
 
-export default function Header({ page, setPage }) {
+export default function Header({ page, setPage, onLogout }) {
   return (
     <AppBar
       position="static"
@@ -45,12 +46,13 @@ export default function Header({ page, setPage }) {
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
+              fontWeight: "bold",
             }}
             onClick={() => {
               setPage(0);
             }}
           >
-            Funds
+            FUNDS
           </Button>
           <Button
             sx={{
@@ -58,20 +60,18 @@ export default function Header({ page, setPage }) {
               textTransform: "none",
               fontSize: "1rem",
               "&:hover": { color: "white" },
+              fontWeight: "bold",
             }}
             onClick={() => {
               setPage(1);
             }}
           >
-            Portfolios
+            PORTFOLIOS
           </Button>
         </Box>
 
         <Box display="flex" alignItems="center" gap={2}>
-          <Avatar
-            alt="User Profile"
-            sx={{ width: 40, height: 40, border: "2px solid #374151" }}
-          />
+          <UserMenu onLogout={onLogout} />
         </Box>
       </Toolbar>
     </AppBar>

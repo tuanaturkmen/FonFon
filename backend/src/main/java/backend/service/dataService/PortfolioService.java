@@ -24,7 +24,9 @@ import backend.service.dataService.entity.Portfolio;
 import backend.service.dataService.entity.PortfolioFund;
 import backend.service.dataService.repository.FundPriceRepository;
 import backend.service.dataService.repository.FundRepository;
+import backend.service.dataService.repository.PortfolioFundRepository;
 import backend.service.dataService.repository.PortfolioRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
@@ -37,6 +39,10 @@ public class PortfolioService {
 	private FundRepository fundRepository;
 	@Autowired
 	private FundPriceRepository fundPriceRepository;
+	@Autowired
+	private PortfolioFundRepository portfolioFundRepository;
+	@Autowired
+	private EntityManager entityManager;
 
 	@Transactional
 	public PortfolioForUI createPortfolio(CreatePortfolioRequest request) {
@@ -66,6 +72,18 @@ public class PortfolioService {
 		portfolio.setTotalAmount(request.getTotalAmount());
 
 		List<PortfolioFund> pfEntities = new ArrayList<>();
+		portfolioCreationHelper(request, portfolio, pfEntities);
+		portfolio.setFunds(pfEntities);
+
+		// 4) Save whole graph (Portfolio + its PortfolioFunds)
+		Portfolio saved = portfolioRepository.save(portfolio);
+
+		// 5) Map to UI DTO
+		return toDto(saved, request.getTotalAmount());
+	}
+
+	private void portfolioCreationHelper(CreatePortfolioRequest request, Portfolio portfolio,
+			List<PortfolioFund> pfEntities) {
 
 		// 3) For each allocation, compute owned_units using latest price
 		for (FundAllocationRequest alloc : request.getAllocations()) {
@@ -73,26 +91,15 @@ public class PortfolioService {
 			Fund fund = fundRepository.findByCode(alloc.getFundCode()).orElseThrow(
 					() -> new IllegalArgumentException("Fund not found with code: " + alloc.getFundCode()));
 
-//			FundPrice latestPrice = fundPriceRepository.findFirstByFundOrderByDateDesc(fund)
-//					.orElseThrow(() -> new IllegalArgumentException("No price data for fund: " + fund.getCode())); // TODO
-//																													// not
-//																													// according
-//																													// to
-//																													// latest
-//																													// date
-
-			FundPrice latestPrice = fundPriceRepository
+			FundPrice priceBD = fundPriceRepository
 					.findOneByCodeAndDateWithFund(fund.getCode(), request.getCreationTime())
-					.orElseThrow(() -> new IllegalArgumentException("No price data for fund: " + fund.getCode())); // TODO
-																													// not
-																													// according
-																													// to
-																													// latest
-																													// date
+					.orElseThrow(() -> new IllegalArgumentException(
+							"No price data for fund: " + fund.getCode() + " for date " + request.getCreationTime()));
 
-			BigDecimal price = latestPrice.getPrice();
+			BigDecimal price = priceBD.getPrice();
 			if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-				throw new IllegalStateException("Invalid latest price for fund: " + fund.getCode());
+				throw new IllegalStateException(
+						"Invalid price for fund: " + fund.getCode() + " for date " + request.getCreationTime());
 			}
 
 			// How much money goes into this fund:
@@ -110,14 +117,6 @@ public class PortfolioService {
 
 			pfEntities.add(pf);
 		}
-
-		portfolio.setFunds(pfEntities);
-
-		// 4) Save whole graph (Portfolio + its PortfolioFunds)
-		Portfolio saved = portfolioRepository.save(portfolio);
-
-		// 5) Map to UI DTO
-		return toDto(saved, request.getTotalAmount());
 	}
 
 	public List<PortfolioForUI> getPortfoliosByUser(Long userId) {
@@ -144,7 +143,6 @@ public class PortfolioService {
 		BigDecimal currentValueOfPortfolio = BigDecimal.ZERO;
 		for (PortfolioFund pf : portfolio.getFunds()) {
 			Fund fund = pf.getFund();
-			System.err.println("Fund : " + fund.getCode());
 
 			PortfolioFundForUI fDto = new PortfolioFundForUI();
 			fDto.setFundCode(fund.getCode());
@@ -160,7 +158,6 @@ public class PortfolioService {
 			if (latestOpt.isPresent() && latestOpt.get().getPrice() != null && pf.getOwnedUnits() != null) {
 				BigDecimal latestPrice = latestOpt.get().getPrice();
 				currentValue = pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP);
-				System.err.println("Fund currentValue: " + latestPrice + " " + pf.getOwnedUnits() + " " + currentValue);
 			}
 
 			fDto.setCurrentValue(currentValue);
@@ -249,5 +246,44 @@ public class PortfolioService {
 		}
 
 		return result;
+	}
+
+	@Transactional
+	public PortfolioForUI updatePortfolio(Long portfolioId, CreatePortfolioRequest request) {
+
+		// Load portfolio and validate user
+		Portfolio portfolio = portfolioRepository.findById(portfolioId)
+				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
+
+		// Optional safety: ensure the incoming userId matches portfolio owner
+		if (!portfolio.getUserId().equals(request.getUserId())) {
+			throw new IllegalArgumentException("Portfolio does not belong to user: " + request.getUserId());
+		}
+
+		// Update basic fields
+		portfolio.setName(request.getName()); // new name
+		portfolio.setTotalAmount(request.getTotalAmount()); // new investment amount
+		portfolio.setCreationTime(request.getCreationTime());
+
+		portfolioFundRepository.deleteByPortfolioId(portfolio.getId());
+		entityManager.flush();
+		// Clear old funds (orphanRemoval = true + cascade = ALL will handle DB deletes)
+		if (portfolio.getFunds() != null) {
+			portfolio.getFunds().clear();
+		} else {
+			portfolio.setFunds(new ArrayList<>());
+		}
+
+		// Rebuild funds from request (same logic as create)
+		BigDecimal hundred = BigDecimal.valueOf(100);
+
+		if (request.getAllocations() != null) {
+			portfolioCreationHelper(request, portfolio, portfolio.getFunds());
+		}
+
+		Portfolio saved = portfolioRepository.save(portfolio);
+
+		// Map to UI DTO (reuse your mapping logic)
+		return toDto(saved, request.getTotalAmount());
 	}
 }

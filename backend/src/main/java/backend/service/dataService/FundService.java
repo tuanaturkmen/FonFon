@@ -111,7 +111,6 @@ public class FundService {
 
 	public List<FundForUI> getFundsForUIByDateRange(LocalDate date) {
 		// Assumes this query already does JOIN FETCH fund and type
-		System.err.println("date: " + date);
 		List<FundPrice> prices = fundPriceRepository.findByDateWithFund(date);
 		List<FundForUI> result = new ArrayList<>(prices.size());
 

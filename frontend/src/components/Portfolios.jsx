@@ -8,6 +8,7 @@ export default function Portfolios({
   handleCreatePortfolioClick,
   handleDeletePortfolioClick,
   handleViewMoreClick,
+  handleEditPortfolioClick,
 }) {
   return (
     <Box sx={{ p: 3 }}>
@@ -44,6 +45,7 @@ export default function Portfolios({
               portfolio={portfolio}
               onDelete={handleDeletePortfolioClick}
               onView={handleViewMoreClick}
+              onEdit={handleEditPortfolioClick}
             />
           </Grid>
         ))}

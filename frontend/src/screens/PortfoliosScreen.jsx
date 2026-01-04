@@ -8,12 +8,14 @@ import {
   getPortfolios,
   createPortfolio,
   deletePortfolio,
+  updatePortfoilo,
 } from "../services/PortfolioService";
 
 export default function PortfoliosScreen() {
   const [portfolios, setPortfolios] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [focusedPortfolio, setFocusedPortfolio] = useState(null);
+  const [updatedPortfolio, setUpdatedPortfolio] = useState(null);
 
   const [toast, setToast] = useState({
     open: false,
@@ -51,17 +53,38 @@ export default function PortfoliosScreen() {
 
   const handleBackClick = () => {
     setIsCreating(false);
+    setUpdatedPortfolio(null);
   };
 
   const handleCreateClick = async (portfolioData) => {
+    if (updatedPortfolio) {
+      try {
+        const portfolioId = 1;
+        await updatePortfoilo(portfolioId, portfolioData);
+        setUpdatedPortfolio(null);
+      } catch (error) {
+        showToast("Failed to update portfolio", "error");
+      }
+    } else {
+      try {
+        await createPortfolio(portfolioData);
+        showToast("Portfolio created successfully!");
+      } catch (error) {
+        showToast("Failed to create portfolio", "error");
+      }
+    }
     try {
-      await createPortfolio(portfolioData);
-      showToast("Portfolio created successfully!");
       await loadPortfolios();
       setIsCreating(false);
     } catch (error) {
-      showToast("Failed to create portfolio", "error");
+      showToast("Failed to load portfolios", "error");
     }
+  };
+
+  const handleEditPortfolioClick = (portfolio) => {
+    setIsCreating(true);
+    setUpdatedPortfolio(portfolio);
+    console.log(portfolio);
   };
 
   const handleDeletePortfolioClick = async (portfolioId) => {
@@ -78,16 +101,13 @@ export default function PortfoliosScreen() {
     setFocusedPortfolio(portfolio);
   };
 
-  const handleBackFromViewPortfolio = () => {
-    setFocusedPortfolio(null);
-  };
-
   return (
     <>
       {isCreating ? (
         <PortfolioCreator
           handleBackClick={handleBackClick}
           handleCreateClick={handleCreateClick}
+          portfolio={updatedPortfolio}
         />
       ) : portfolios.length === 0 ? (
         <PortfoliosWelcomer
@@ -99,6 +119,7 @@ export default function PortfoliosScreen() {
           handleCreatePortfolioClick={handleCreatePortfolioClick}
           handleDeletePortfolioClick={handleDeletePortfolioClick}
           handleViewMoreClick={handleViewMoreClick}
+          handleEditPortfolioClick={handleEditPortfolioClick}
         />
       )}
 

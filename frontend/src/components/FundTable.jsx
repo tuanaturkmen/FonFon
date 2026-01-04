@@ -24,7 +24,6 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import { getAllFunds } from "../services/FundService";
 import FundDetailDrawer from "./FundDetailDrawer";
 import CompareFundsDrawer from "./CompareFundsDrawer";
 
@@ -68,9 +67,8 @@ const inputStyle = {
   "& .MuiInputBase-input": { padding: "8px 14px" },
 };
 
-export default function FundTable() {
-  const [allFunds, setAllFunds] = useState([]);
-  const [data, setData] = useState([]);
+export default function FundTable({ funds }) {
+  const [data, setData] = useState(funds);
 
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState([]);
@@ -97,18 +95,6 @@ export default function FundTable() {
   const [selectedFund, setSelectedFund] = useState(null);
   const [isCompareDrawerOpen, setIsCompareDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  const loadInitialData = async () => {
-    const res = await getAllFunds();
-    if (res) {
-      setAllFunds(res);
-      setData(res);
-    }
-  };
-
   const sortedData = useMemo(
     () => stableSort(data, getComparator(order, orderBy)),
     [data, order, orderBy]
@@ -121,7 +107,7 @@ export default function FundTable() {
   const handleApplyFilters = () => {
     setPage(1);
 
-    let filtered = [...allFunds];
+    let filtered = [...funds];
 
     if (filterValues.name) {
       const term = filterValues.name.toLowerCase();
@@ -166,7 +152,7 @@ export default function FundTable() {
       maxInvestors: "",
     });
     setPage(1);
-    setData(allFunds);
+    setData(funds);
   };
 
   const handleRequestSort = (event, property) => {
@@ -229,7 +215,7 @@ export default function FundTable() {
   const handleCloseCompareDrawer = () => setIsCompareDrawerOpen(false);
 
   const getSelectedFundObjects = () =>
-    allFunds.filter((fund) => selected.includes(fund.code));
+    funds.filter((fund) => selected.includes(fund.code));
 
   const isSelected = (code) => selected.indexOf(code) !== -1;
   const formatCurrency = (value) =>
@@ -255,7 +241,6 @@ export default function FundTable() {
 
   return (
     <Box sx={{ width: "95%", margin: "0 auto", py: 4 }}>
-      {/* HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -264,7 +249,7 @@ export default function FundTable() {
           mb: 2,
         }}
       >
-        <Typography variant="h5" sx={{ color: "white" }}>
+        <Typography variant="h5" sx={{ color: "white", fontWeight: "bold" }}>
           Available Funds
         </Typography>
 
@@ -297,7 +282,7 @@ export default function FundTable() {
             disabled={selected.length < 2}
             sx={{
               backgroundColor: "#34D399",
-              "&:hover": { backgroundColor: "#059669" },
+              "&:hover": { backgroundColor: "rgba(5, 150, 105, 1)" },
               "&.Mui-disabled": {
                 backgroundColor: "rgba(255, 255, 255, 0.12)",
                 color: "rgba(255, 255, 255, 0.3)",
@@ -308,8 +293,6 @@ export default function FundTable() {
           </Button>
         </Stack>
       </Box>
-
-      {/* 3. LAYOUT FIX: Reorganized Filter Grid */}
       <Collapse in={showFilters}>
         <Paper
           sx={{
@@ -442,7 +425,7 @@ export default function FundTable() {
                     variant="caption"
                     sx={{ color: "white", mb: 1, display: "block" }}
                   >
-                    Investors
+                    Holders
                   </Typography>
                   <Stack direction="row" spacing={2}>
                     <TextField
@@ -493,7 +476,6 @@ export default function FundTable() {
         </Paper>
       </Collapse>
 
-      {/* TABLE */}
       <TableContainer
         component={Paper}
         sx={{
