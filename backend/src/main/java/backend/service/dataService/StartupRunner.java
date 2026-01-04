@@ -31,10 +31,10 @@ public class StartupRunner implements CommandLineRunner {
 				var st = c.createStatement();
 				var rs = st.executeQuery("select current_database(), inet_server_addr(), inet_server_port()")) {
 			if (rs.next()) {
-				System.out.println("🗄️ DB=" + rs.getString(1) + " host=" + rs.getString(2) + ":" + rs.getInt(3));
+				System.out.println("DB=" + rs.getString(1) + " host=" + rs.getString(2) + ":" + rs.getInt(3));
 			}
 		} catch (Exception e) {
-			System.out.println("❌ DB connection check failed: " + e.getMessage());
+			System.out.println("DB connection check failed: " + e.getMessage());
 			throw new RuntimeException(e);
 		}
 	}
@@ -44,7 +44,7 @@ public class StartupRunner implements CommandLineRunner {
 
 		logDbInfo();
 		if (!importEnabled) {
-			System.out.println("ℹ️ Import Data disabled.");
+			System.out.println("Import Data disabled.");
 			return;
 		}
 
@@ -62,12 +62,12 @@ public class StartupRunner implements CommandLineRunner {
 						"IMPORT: returned from importFundsFromExcel in " + (System.currentTimeMillis() - t0) + " ms");
 				System.out.println("Import finished.");
 			}
-			System.out.println("✅ Funds imported successfully!");
+			System.out.println("Funds imported successfully!");
 		} catch (Throwable t) { // <--- CHANGE 'Exception' TO 'Throwable'
 			// This catches OutOfMemoryError, NoClassDefFoundError, etc.
-			System.out.println("❌ CRITICAL FAILURE in Background Thread!");
-			System.out.println("❌ Error type: " + t.getClass().getName());
-			System.out.println("❌ Message: " + t.getMessage());
+			System.out.println("CRITICAL FAILURE in Background Thread!");
+			System.out.println("Error type: " + t.getClass().getName());
+			System.out.println("Message: " + t.getMessage());
 			t.printStackTrace();
 		}
 //		}).start();
