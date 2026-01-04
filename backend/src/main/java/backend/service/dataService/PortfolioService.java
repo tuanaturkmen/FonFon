@@ -143,7 +143,6 @@ public class PortfolioService {
 		BigDecimal currentValueOfPortfolio = BigDecimal.ZERO;
 		for (PortfolioFund pf : portfolio.getFunds()) {
 			Fund fund = pf.getFund();
-			System.err.println("Fund : " + fund.getCode());
 
 			PortfolioFundForUI fDto = new PortfolioFundForUI();
 			fDto.setFundCode(fund.getCode());
@@ -159,7 +158,6 @@ public class PortfolioService {
 			if (latestOpt.isPresent() && latestOpt.get().getPrice() != null && pf.getOwnedUnits() != null) {
 				BigDecimal latestPrice = latestOpt.get().getPrice();
 				currentValue = pf.getOwnedUnits().multiply(latestPrice).setScale(2, RoundingMode.HALF_UP);
-				System.err.println("Fund currentValue: " + latestPrice + " " + pf.getOwnedUnits() + " " + currentValue);
 			}
 
 			fDto.setCurrentValue(currentValue);

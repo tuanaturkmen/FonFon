@@ -92,7 +92,6 @@ public class PortfolioController {
 	public ResponseEntity<PortfolioForUI> updatePortfolio(@PathVariable Long portfolioId,
 			@RequestBody CreatePortfolioRequest request) {
 
-		System.err.println("cALL UPDATE PORTf");
 		PortfolioForUI updated = portfolioService.updatePortfolio(portfolioId, request);
 		return ResponseEntity.ok(updated);
 	}

@@ -48,7 +48,7 @@ public class FundDataImportService {
 
 		// 1. Find the Fund Type (e.g., "INVESTMENT")
 		FundType type = fundTypeRepository.findByName(fundTypeName).orElseGet(() -> {
-			System.out.println("⚠️ FundType '" + fundTypeName + "' not found. Creating it...");
+			System.out.println("FundType '" + fundTypeName + "' not found. Creating it...");
 			FundType newType = new FundType();
 			newType.setName(fundTypeName); // Assuming FundType has a setName method
 			return fundTypeRepository.save(newType);
@@ -65,7 +65,7 @@ public class FundDataImportService {
 		System.out.println("IMPORT: opening workbook...");
 		Workbook workbook = StreamingReader.builder().rowCacheSize(100).bufferSize(4096).open(is);
 		System.out.println("IMPORT: workbook opened in " + (System.currentTimeMillis() - t0) + " ms");
-		System.out.println("✅ Workbook opened in STREAMING mode.");
+		System.out.println("Workbook opened in STREAMING mode.");
 		Sheet sheet = workbook.getSheetAt(0);
 		int rows = 0;
 
@@ -136,15 +136,15 @@ public class FundDataImportService {
 					}
 				}
 			} catch (Exception e) {
-				System.out.println("❌ Failed at excelRow=" + row.getRowNum());
+				System.out.println("Failed at excelRow=" + row.getRowNum());
 				e.printStackTrace();
 				throw e;
 			}
 		}
 
-		System.out.println("📊 Total processed rows=" + rows);
-		System.out.println("📊 processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices="
-				+ insertedPrices);
+		System.out.println("Total processed rows=" + rows);
+		System.out.println(
+				"processedRows=" + processed + " insertedFunds=" + insertedFunds + " insertedPrices=" + insertedPrices);
 
 	}
 
