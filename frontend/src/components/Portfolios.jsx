@@ -38,10 +38,11 @@ export default function Portfolios({
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ display: "flex" }}>
         {portfolios.map((portfolio) => (
-          <Grid item xs={12} md={12} lg={6} xl={6} key={portfolio.id}>
+          <Grid item key={portfolio.id}>
             <PortfolioAnalysisCard
+              sx={{ flex: 1 }}
               portfolio={portfolio}
               onDelete={handleDeletePortfolioClick}
               onView={handleViewMoreClick}

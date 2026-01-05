@@ -14,6 +14,7 @@ import {
   Box,
   TablePagination,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -29,6 +30,13 @@ export default function FundList({
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (allFunds.length != 0) {
+      setReady(true);
+    }
+  }, [allFunds]);
 
   const filteredFunds = allFunds?.filter((fund) => {
     const matchesSearch = fund.name
@@ -60,6 +68,54 @@ export default function FundList({
       notation: "compact",
       compactDisplay: "short",
     }).format(val);
+
+  if (!ready) {
+    return (
+      <Paper
+        sx={{
+          p: 3,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "600px",
+          minWidth: "900px",
+          bgcolor: "#111827",
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{ mb: 2, fontWeight: "bold", color: "white" }}
+        >
+          Available Funds
+        </Typography>
+
+        <Box
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <CircularProgress
+            color="success"
+            size={60}
+            thickness={4}
+            sx={{ mb: 2 }}
+          />
+          <Typography
+            variant="body1"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 500,
+              letterSpacing: "0.05em",
+            }}
+          ></Typography>
+        </Box>
+      </Paper>
+    );
+  }
 
   return (
     <Paper sx={{ p: 3, display: "flex", flexDirection: "column" }}>

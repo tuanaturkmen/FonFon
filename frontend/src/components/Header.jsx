@@ -68,6 +68,20 @@ export default function Header({ page, setPage, onLogout }) {
           >
             PORTFOLIOS
           </Button>
+          <Button
+            sx={{
+              color: page == 2 ? "#10B981" : "#9CA3AF",
+              textTransform: "none",
+              fontSize: "1rem",
+              "&:hover": { color: "white" },
+              fontWeight: "bold",
+            }}
+            onClick={() => {
+              setPage(2);
+            }}
+          >
+            ANALYSE & COMPARE
+          </Button>
         </Box>
 
         <Box display="flex" alignItems="center" gap={2}>
