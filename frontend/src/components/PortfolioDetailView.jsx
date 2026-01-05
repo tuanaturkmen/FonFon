@@ -106,8 +106,10 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
 
   const [startDate, setStartDate] = useState("2025-10-15");
   const [endDate, setEndDate] = useState("2025-12-25");
+
   const [startDateValue, setStartDateValue] = useState(0);
   const [endDateValue, setEndDateValue] = useState(0);
+  const [funds, setFunds] = useState([]);
 
   const formatCurrency = (value) => {
     return value
@@ -137,10 +139,11 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
         startDate,
         endDate
       );
-      if (data && data.length > 0) {
-        setHistoryData(data);
-        setStartDateValue(data.at(0).totalValue);
-        setEndDateValue(data.at(-1).totalValue);
+      if (data && data.points.length > 0) {
+        setHistoryData(data.points);
+        setStartDateValue(data.points.at(0).totalValue);
+        setEndDateValue(data.points.at(-1).totalValue);
+        setFunds(data.fundChanges);
       }
     } catch (error) {
       console.error(error);
@@ -460,7 +463,7 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {portfolio.funds.map((fund) => (
+                      {funds.map((fund) => (
                         <TableRow
                           key={fund.fundCode}
                           sx={{
@@ -488,12 +491,16 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
                           <TableCell
                             align="right"
                             sx={{
-                              color: "#00e676",
+                              color:
+                                fund.percentChange > 0 ? "#00e676" : "#ff1744",
                               borderBottom: "1px solid #1e293b",
                               fontWeight: 600,
                             }}
                           >
-                            +12.4%
+                            {fund.percentChange > 0
+                              ? "+" + fund.percentChange
+                              : fund.percentChange}
+                            %
                           </TableCell>
                         </TableRow>
                       ))}

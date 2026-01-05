@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// const BASE_URL = "http://localhost:8080/api";
+//  const BASE_URL = "http://192.168.1.6:8080/api";
 const BASE_URL = "https://fonfon-1045759541438.europe-west6.run.app/api";
 
 export const getPortfolios = async (userId) => {
@@ -16,7 +16,10 @@ export const createPortfolio = async (portfolioData) => {
 
 export const updatePortfoilo = async (portfolioId, portfolioData) => {
   console.log("updatePortfoio");
-  const res = await axios.post(`${BASE_URL}/portfolios`, portfolioData); //TODO fix
+  const res = await axios.put(
+    `${BASE_URL}/portfolios/${portfolioId}`,
+    portfolioData
+  );
   console.log(res);
 };
 

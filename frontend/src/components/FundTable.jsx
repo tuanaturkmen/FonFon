@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -9,7 +9,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Link,
   Pagination,
   PaginationItem,
   Stack,
@@ -19,7 +18,9 @@ import {
   TextField,
   Collapse,
   Grid,
+  InputAdornment,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
@@ -27,13 +28,10 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import FundDetailDrawer from "./FundDetailDrawer";
 import CompareFundsDrawer from "./CompareFundsDrawer";
 
+// --- Helpers ---
 function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
+  if (b[orderBy] < a[orderBy]) return -1;
+  if (b[orderBy] > a[orderBy]) return 1;
   return 0;
 }
 
@@ -47,9 +45,7 @@ function stableSort(array, comparator) {
   const stabilizedThis = array.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
     const order = comparator(a[0], b[0]);
-    if (order !== 0) {
-      return order;
-    }
+    if (order !== 0) return order;
     return a[1] - b[1];
   });
   return stabilizedThis.map((el) => el[0]);
@@ -69,12 +65,12 @@ const inputStyle = {
 
 export default function FundTable({ funds }) {
   const [data, setData] = useState(funds);
-
   const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState([]);
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState("name");
-
+  const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filterValues, setFilterValues] = useState({
     name: "",
@@ -88,9 +84,7 @@ export default function FundTable({ funds }) {
     maxInvestors: "",
   });
 
-  const rowsPerPage = 5;
   const MAX_SELECTION = 5;
-
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedFund, setSelectedFund] = useState(null);
   const [isCompareDrawerOpen, setIsCompareDrawerOpen] = useState(false);
@@ -100,29 +94,26 @@ export default function FundTable({ funds }) {
     [data, order, orderBy]
   );
 
-  const handleToggleFilters = () => setShowFilters((prev) => !prev);
-  const handleFilterChange = (prop) => (event) =>
-    setFilterValues({ ...filterValues, [prop]: event.target.value });
-
-  const handleApplyFilters = () => {
+  const handleGlobalSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
     setPage(1);
-
-    let filtered = [...funds];
-
-    if (filterValues.name) {
-      const term = filterValues.name.toLowerCase();
-      filtered = filtered.filter(
+    setData(
+      funds.filter(
         (f) =>
           f.name.toLowerCase().includes(term) ||
           f.code.toLowerCase().includes(term)
-      );
-    }
+      )
+    );
+  };
 
+  const handleApplyFilters = () => {
+    setPage(1);
+    let filtered = [...funds];
     const filterRange = (field, min, max) => {
       if (min) filtered = filtered.filter((f) => f[field] >= parseFloat(min));
       if (max) filtered = filtered.filter((f) => f[field] <= parseFloat(max));
     };
-
     filterRange("price", filterValues.minPrice, filterValues.maxPrice);
     filterRange("totalValue", filterValues.minValue, filterValues.maxValue);
     filterRange(
@@ -135,7 +126,6 @@ export default function FundTable({ funds }) {
       filterValues.minInvestors,
       filterValues.maxInvestors
     );
-
     setData(filtered);
   };
 
@@ -151,125 +141,93 @@ export default function FundTable({ funds }) {
       minInvestors: "",
       maxInvestors: "",
     });
+    setSearchTerm("");
     setPage(1);
     setData(funds);
   };
 
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
-    setOrderBy(property);
-    setPage(1);
-  };
-
-  const handleSelectAllClick = (event) => {
-    if (event.target.checked) {
-      const startIndex = (page - 1) * rowsPerPage;
-      const endIndex = startIndex + rowsPerPage;
-      const visibleRows = sortedData.slice(startIndex, endIndex);
-      const availableSlots = MAX_SELECTION - selected.length;
-
-      if (availableSlots <= 0) return;
-
-      const candidates = visibleRows
-        .filter((r) => !selected.includes(r.code))
-        .map((r) => r.code);
-
-      const toAdd = candidates.slice(0, availableSlots);
-      setSelected([...selected, ...toAdd]);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleClick = (event, code) => {
-    const selectedIndex = selected.indexOf(code);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      if (selected.length >= MAX_SELECTION) return;
-      newSelected = newSelected.concat(selected, code);
-    } else {
-      if (selectedIndex === 0) {
-        newSelected = newSelected.concat(selected.slice(1));
-      } else if (selectedIndex === selected.length - 1) {
-        newSelected = newSelected.concat(selected.slice(0, -1));
-      } else if (selectedIndex > 0) {
-        newSelected = newSelected.concat(
-          selected.slice(0, selectedIndex),
-          selected.slice(selectedIndex + 1)
-        );
-      }
-    }
-    setSelected(newSelected);
-  };
-
-  const handleChangePage = (event, newPage) => setPage(newPage);
-  const handleOpenDrawer = (event, fund) => {
-    event.stopPropagation();
-    setSelectedFund(fund);
-    setIsDrawerOpen(true);
-  };
-  const handleCloseDrawer = () => setIsDrawerOpen(false);
-  const handleCompare = () => setIsCompareDrawerOpen(true);
-  const handleCloseCompareDrawer = () => setIsCompareDrawerOpen(false);
-
-  const getSelectedFundObjects = () =>
-    funds.filter((fund) => selected.includes(fund.code));
-
-  const isSelected = (code) => selected.indexOf(code) !== -1;
-  const formatCurrency = (value) =>
-    value
-      ? value.toLocaleString("tr-TR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : "0,00";
-  const formatNumber = (value) => (value ? value.toLocaleString("tr-TR") : "0");
-
-  const pageCount = Math.ceil(data.length / rowsPerPage);
-  const startIndex = (page - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const visibleRows = sortedData.slice(startIndex, endIndex);
-  const numSelectedVisible = visibleRows.filter((r) =>
-    selected.includes(r.code)
-  ).length;
-  const isPageAllSelected =
-    visibleRows.length > 0 && numSelectedVisible === visibleRows.length;
-  const isPageIndeterminate =
-    numSelectedVisible > 0 && numSelectedVisible < visibleRows.length;
+  const visibleRows = sortedData.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage
+  );
 
   return (
     <Box sx={{ width: "95%", margin: "0 auto", py: 4 }}>
+      {/* Top Header & Actions */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 2,
+          mb: 3,
         }}
       >
         <Typography variant="h5" sx={{ color: "white", fontWeight: "bold" }}>
           Available Funds
         </Typography>
 
-        <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          {/* Styled Row Selector - Same size as buttons */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              px: 1.5,
+              height: "36.5px",
+              border: "1px solid rgba(255, 255, 255, 0.23)",
+              borderRadius: "1px", // Using 1px for a sharper look or 4px for standard MUI
+              backgroundColor: "transparent",
+              "&:hover": { borderColor: "white" },
+            }}
+          >
+            <Typography
+              sx={{
+                color: "white",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                mr: 1,
+              }}
+            >
+              ROWS:
+            </Typography>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value));
+                setPage(1);
+              }}
+              style={{
+                background: "transparent",
+                color: "white",
+                border: "none",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              {[5, 10, 20, 50].map((opt) => (
+                <option
+                  key={opt}
+                  value={opt}
+                  style={{ background: "#1F2937", color: "white" }}
+                >
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </Box>
+
           <Button
             variant={showFilters ? "contained" : "outlined"}
             startIcon={<FilterListIcon />}
-            onClick={handleToggleFilters}
+            onClick={() => setShowFilters(!showFilters)}
             sx={{
+              height: "36.5px",
               color: showFilters ? "#1F2937" : "white",
               borderColor: "rgba(255, 255, 255, 0.23)",
-              backgroundColor: showFilters
-                ? "rgba(255, 255, 255, 0.9)"
-                : "transparent",
-              "&:hover": {
-                borderColor: "white",
-                backgroundColor: showFilters
-                  ? "white"
-                  : "rgba(255, 255, 255, 0.05)",
-              },
+              backgroundColor: showFilters ? "white" : "transparent",
+              "&:hover": { borderColor: "white" },
             }}
           >
             Filters
@@ -278,21 +236,36 @@ export default function FundTable({ funds }) {
           <Button
             variant="contained"
             startIcon={<CompareArrowsIcon />}
-            onClick={handleCompare}
+            onClick={() => setIsCompareDrawerOpen(true)}
             disabled={selected.length < 2}
             sx={{
+              height: "36.5px",
               backgroundColor: "#34D399",
-              "&:hover": { backgroundColor: "rgba(5, 150, 105, 1)" },
-              "&.Mui-disabled": {
-                backgroundColor: "rgba(255, 255, 255, 0.12)",
-                color: "rgba(255, 255, 255, 0.3)",
-              },
+              "&:hover": { backgroundColor: "#059669" },
             }}
           >
-            Compare
+            Compare ({selected.length}/{MAX_SELECTION})
           </Button>
         </Stack>
       </Box>
+
+      {/* Search Field */}
+      <TextField
+        placeholder="Quick search..."
+        fullWidth
+        value={searchTerm}
+        onChange={handleGlobalSearch}
+        sx={{ ...inputStyle, mb: 3 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ color: "#9CA3AF" }} />
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      {/* Advanced Filters Section */}
       <Collapse in={showFilters}>
         <Paper
           sx={{
@@ -300,27 +273,22 @@ export default function FundTable({ funds }) {
             mb: 3,
             border: "1px solid #374151",
             borderRadius: 2,
+            backgroundColor: "rgba(255,255,255,0.02)",
           }}
         >
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
               <Typography
                 variant="subtitle2"
-                sx={{
-                  color: "#9CA3AF",
-                  fontWeight: "bold",
-                  mb: 2,
-                  letterSpacing: 1,
-                }}
+                sx={{ color: "#9CA3AF", fontWeight: "bold", mb: 2 }}
               >
                 FINANCIALS
               </Typography>
-
-              <Stack spacing={1}>
+              <Stack spacing={2}>
                 <Box>
                   <Typography
                     variant="caption"
-                    sx={{ color: "white", mb: 1, display: "block" }}
+                    sx={{ color: "white", display: "block", mb: 1 }}
                   >
                     Price (₺)
                   </Typography>
@@ -331,7 +299,12 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.minPrice}
-                      onChange={handleFilterChange("minPrice")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          minPrice: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                     <TextField
@@ -340,16 +313,20 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.maxPrice}
-                      onChange={handleFilterChange("maxPrice")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          maxPrice: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                   </Stack>
                 </Box>
-
                 <Box>
                   <Typography
                     variant="caption"
-                    sx={{ color: "white", mb: 1, display: "block" }}
+                    sx={{ color: "white", display: "block", mb: 1 }}
                   >
                     Total Value (₺)
                   </Typography>
@@ -360,7 +337,12 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.minValue}
-                      onChange={handleFilterChange("minValue")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          minValue: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                     <TextField
@@ -369,32 +351,30 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.maxValue}
-                      onChange={handleFilterChange("maxValue")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          maxValue: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                   </Stack>
                 </Box>
               </Stack>
             </Grid>
-
-            <Grid item xs={12} md={6} sx={{ pl: { md: 2 } }}>
+            <Grid item xs={12} md={6}>
               <Typography
                 variant="subtitle2"
-                sx={{
-                  color: "#9CA3AF",
-                  fontWeight: "bold",
-                  mb: 2,
-                  letterSpacing: 1,
-                }}
+                sx={{ color: "#9CA3AF", fontWeight: "bold", mb: 2 }}
               >
                 MARKET DATA
               </Typography>
-
-              <Stack spacing={1}>
+              <Stack spacing={2}>
                 <Box>
                   <Typography
                     variant="caption"
-                    sx={{ color: "white", mb: 1, display: "block" }}
+                    sx={{ color: "white", display: "block", mb: 1 }}
                   >
                     Circulating Units
                   </Typography>
@@ -405,7 +385,12 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.minUnits}
-                      onChange={handleFilterChange("minUnits")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          minUnits: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                     <TextField
@@ -414,16 +399,20 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.maxUnits}
-                      onChange={handleFilterChange("maxUnits")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          maxUnits: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                   </Stack>
                 </Box>
-
                 <Box>
                   <Typography
                     variant="caption"
-                    sx={{ color: "white", mb: 1, display: "block" }}
+                    sx={{ color: "white", display: "block", mb: 1 }}
                   >
                     Holders
                   </Typography>
@@ -434,7 +423,12 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.minInvestors}
-                      onChange={handleFilterChange("minInvestors")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          minInvestors: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                     <TextField
@@ -443,7 +437,12 @@ export default function FundTable({ funds }) {
                       size="small"
                       fullWidth
                       value={filterValues.maxInvestors}
-                      onChange={handleFilterChange("maxInvestors")}
+                      onChange={(e) =>
+                        setFilterValues({
+                          ...filterValues,
+                          maxInvestors: e.target.value,
+                        })
+                      }
                       sx={inputStyle}
                     />
                   </Stack>
@@ -451,31 +450,25 @@ export default function FundTable({ funds }) {
               </Stack>
             </Grid>
           </Grid>
-
-          <Grid item xs={12}>
-            <Box display="flex" justifyContent="flex-end" gap={2} pt={1}>
-              <Button
-                onClick={handleClearFilters}
-                sx={{ color: "#9CA3AF", "&:hover": { color: "white" } }}
-              >
-                Clear All
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleApplyFilters}
-                sx={{
-                  px: 4,
-                  backgroundColor: "#10B981",
-                  "&:hover": { backgroundColor: "#059669" },
-                }}
-              >
-                Apply Filters
-              </Button>
-            </Box>
-          </Grid>
+          <Box display="flex" justifyContent="flex-end" gap={2} mt={3}>
+            <Button onClick={handleClearFilters} sx={{ color: "#9CA3AF" }}>
+              Clear All
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleApplyFilters}
+              sx={{
+                backgroundColor: "#10B981",
+                "&:hover": { backgroundColor: "#059669" },
+              }}
+            >
+              Apply Filters
+            </Button>
+          </Box>
         </Paper>
       </Collapse>
 
+      {/* Table Body */}
       <TableContainer
         component={Paper}
         sx={{
@@ -485,211 +478,146 @@ export default function FundTable({ funds }) {
           mb: 2,
         }}
       >
-        <Table sx={{ minWidth: 650 }} aria-label="fund table">
+        <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
                 <Checkbox
                   color="primary"
-                  indeterminate={isPageIndeterminate}
-                  checked={isPageAllSelected}
-                  onChange={handleSelectAllClick}
-                  inputProps={{ "aria-label": "select current page" }}
+                  checked={
+                    visibleRows.length > 0 &&
+                    visibleRows.every((r) => selected.includes(r.code))
+                  }
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      const toAdd = visibleRows
+                        .filter((r) => !selected.includes(r.code))
+                        .map((r) => r.code)
+                        .slice(0, MAX_SELECTION - selected.length);
+                      setSelected([...selected, ...toAdd]);
+                    } else setSelected([]);
+                  }}
                 />
               </TableCell>
-
-              <TableCell align="left">
-                <TableSortLabel
-                  active={orderBy === "date"}
-                  direction={orderBy === "date" ? order : "asc"}
-                  onClick={(event) => handleRequestSort(event, "date")}
-                >
-                  Date
-                </TableSortLabel>
-              </TableCell>
-
-              <TableCell align="left">
+              <TableCell>
                 <TableSortLabel
                   active={orderBy === "name"}
-                  direction={orderBy === "name" ? order : "asc"}
-                  onClick={(event) => handleRequestSort(event, "name")}
+                  direction={order}
+                  onClick={() => {
+                    setOrder(order === "asc" ? "desc" : "asc");
+                    setOrderBy("name");
+                  }}
                 >
                   Fund Name
                 </TableSortLabel>
               </TableCell>
-
-              <TableCell align="right">
-                <TableSortLabel
-                  active={orderBy === "price"}
-                  direction={orderBy === "price" ? order : "asc"}
-                  onClick={(event) => handleRequestSort(event, "price")}
-                >
-                  Price
-                </TableSortLabel>
-              </TableCell>
-
-              <TableCell align="right">
-                <TableSortLabel
-                  active={orderBy === "circulatingUnits"}
-                  direction={orderBy === "circulatingUnits" ? order : "asc"}
-                  onClick={(event) =>
-                    handleRequestSort(event, "circulatingUnits")
-                  }
-                >
-                  Circulating Units
-                </TableSortLabel>
-              </TableCell>
-
-              <TableCell align="right">
-                <TableSortLabel
-                  active={orderBy === "investorCount"}
-                  direction={orderBy === "investorCount" ? order : "asc"}
-                  onClick={(event) => handleRequestSort(event, "investorCount")}
-                >
-                  Holders
-                </TableSortLabel>
-              </TableCell>
-
-              <TableCell align="right">
-                <TableSortLabel
-                  active={orderBy === "totalValue"}
-                  direction={orderBy === "totalValue" ? order : "asc"}
-                  onClick={(event) => handleRequestSort(event, "totalValue")}
-                >
-                  Total Value
-                </TableSortLabel>
-              </TableCell>
-
+              <TableCell align="right">Price</TableCell>
+              <TableCell align="right">Holders</TableCell>
+              <TableCell align="right">Total Value</TableCell>
               <TableCell align="right"></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {visibleRows.map((row) => {
-              const isItemSelected = isSelected(row.code);
-              const isCheckBoxDisabled =
-                !isItemSelected && selected.length >= MAX_SELECTION;
-
-              return (
-                <TableRow
-                  key={row.code}
-                  hover
-                  onClick={(event) =>
-                    !isCheckBoxDisabled && handleClick(event, row.code)
-                  }
-                  role="checkbox"
-                  aria-checked={isItemSelected}
-                  selected={isItemSelected}
-                  sx={{
-                    cursor: isCheckBoxDisabled ? "not-allowed" : "pointer",
-                    opacity: isCheckBoxDisabled ? 0.6 : 1,
-                  }}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      color="primary"
-                      checked={isItemSelected}
-                      disabled={isCheckBoxDisabled}
-                      inputProps={{ "aria-labelledby": row.code }}
-                    />
-                  </TableCell>
-
-                  <TableCell align="left">
-                    <Typography variant="body2" color="text.secondary">
-                      {row.date}
-                    </Typography>
-                  </TableCell>
-                  <TableCell component="th" scope="row">
-                    <Box display="flex" flexDirection="column">
-                      <Typography variant="body1" fontWeight={500}>
-                        {row.name}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
-                        {row.code}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1" fontWeight={500}>
-                      {formatCurrency(row.price)} ₺
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" color="text.secondary">
-                      {formatNumber(row.circulatingUnits)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" color="text.secondary">
-                      {formatNumber(row.investorCount)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1" fontWeight={500}>
-                      {formatCurrency(row.totalValue)} ₺
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Link
-                      component="button"
-                      onClick={(event) => handleOpenDrawer(event, row)}
-                      underline="none"
-                      sx={{
-                        color: "info.main",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                        "&:hover": { color: "#34D399" },
-                        cursor: "pointer",
-                      }}
-                    >
-                      View Details
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {visibleRows.map((row) => (
+              <TableRow
+                key={row.code}
+                hover
+                selected={selected.includes(row.code)}
+                onClick={() => {
+                  const isItemSelected = selected.includes(row.code);
+                  if (isItemSelected)
+                    setSelected(selected.filter((i) => i !== row.code));
+                  else if (selected.length < MAX_SELECTION)
+                    setSelected([...selected, row.code]);
+                }}
+                sx={{
+                  cursor:
+                    selected.length >= MAX_SELECTION &&
+                    !selected.includes(row.code)
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity:
+                    selected.length >= MAX_SELECTION &&
+                    !selected.includes(row.code)
+                      ? 0.5
+                      : 1,
+                  "& .MuiTableCell-root": { padding: "4px 16px" },
+                }}
+              >
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    color="primary"
+                    checked={selected.includes(row.code)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight={500}>
+                    {row.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {row.code}
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  {row.price.toLocaleString("tr-TR")} ₺
+                </TableCell>
+                <TableCell align="right">
+                  {row.investorCount.toLocaleString("tr-TR")}
+                </TableCell>
+                <TableCell align="right">
+                  {row.totalValue.toLocaleString("tr-TR")} ₺
+                </TableCell>
+                <TableCell align="right">
+                  <Typography
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFund(row);
+                      setIsDrawerOpen(true);
+                    }}
+                    sx={{
+                      color: "info.main",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      "&:hover": { color: "#34D399" },
+                    }}
+                  >
+                    View Details
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <Stack spacing={2} alignItems="center">
+      {/* Pagination */}
+      <Stack alignItems="center" sx={{ mt: 3 }}>
         <Pagination
-          count={pageCount}
+          count={Math.ceil(data.length / rowsPerPage)}
           page={page}
-          onChange={handleChangePage}
+          onChange={(e, p) => setPage(p)}
           shape="rounded"
           renderItem={(item) => (
             <PaginationItem
               slots={{ previous: ArrowBackIcon, next: ArrowForwardIcon }}
               {...item}
-              sx={{
-                color: "text.secondary",
-                fontSize: "0.9rem",
-                "&.Mui-selected": {
-                  backgroundColor: "success.main",
-                  color: "white",
-                  fontWeight: "bold",
-                  "&:hover": { backgroundColor: "#059669" },
-                },
-                "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.08)" },
-              }}
+              sx={{ color: "white" }}
             />
           )}
         />
       </Stack>
 
+      {/* Drawers */}
       <FundDetailDrawer
         open={isDrawerOpen}
-        onClose={handleCloseDrawer}
+        onClose={() => setIsDrawerOpen(false)}
         fund={selectedFund}
       />
       <CompareFundsDrawer
         open={isCompareDrawerOpen}
-        onClose={handleCloseCompareDrawer}
-        funds={getSelectedFundObjects()}
+        onClose={() => setIsCompareDrawerOpen(false)}
+        funds={funds.filter((f) => selected.includes(f.code))}
       />
     </Box>
   );

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import "./App.css";
 import Header from "./components/Header";
+import LandingPage from "./screens/LandingScreen";
 import FundsScreen from "./screens/FundsScreen";
 import PortfoliosScreen from "./screens/PortfoliosScreen";
-import LandingPage from "./screens/LandingScreen";
+import CompareScreen from "./screens/CompareScreen";
 
 function App() {
   const [started, setStarted] = useState(false);
@@ -26,6 +27,7 @@ function App() {
           <Header page={page} setPage={setPage} onLogout={handleLogout} />
           {page == 0 && <FundsScreen />}
           {page == 1 && <PortfoliosScreen />}
+          {page == 2 && <CompareScreen />}
         </>
       )}
     </>

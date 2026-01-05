@@ -46,12 +46,6 @@ export default function PortfolioAnalysisCard({
   const percentChange = initial !== 0 ? ((diff / initial) * 100).toFixed(2) : 0;
   const isProfit = diff >= 0;
 
-  const currencyFormatter = new Intl.NumberFormat("tr-TR", {
-    style: "currency",
-    currency: "TRY",
-    minimumFractionDigits: 2,
-  });
-
   const sortedFunds = [...portfolio.funds].sort(
     (a, b) => b.allocationPercent - a.allocationPercent
   );
@@ -87,6 +81,36 @@ export default function PortfolioAnalysisCard({
     ];
   }
 
+  const formatCurrency = (value) => {
+    if (value === 0) return "0,00 ₺";
+
+    if (value >= 1000000) {
+      return `₺${(value / 1000000).toLocaleString("tr-TR", {
+        maximumFractionDigits: 2,
+      })}M ₺`;
+    } else if (value >= 10000) {
+      return `${(value / 1000).toLocaleString("tr-TR", {
+        maximumFractionDigits: 2,
+      })}K ₺`;
+    } else {
+      return `${(value / 1).toLocaleString("tr-TR", {
+        maximumFractionDigits: 2,
+      })} ₺`;
+    }
+  };
+
+  const formatChange = (isProfit, percentChange) => {
+    let change = String(percentChange);
+    if (
+      (isProfit && percentChange < 10) ||
+      (!isProfit && percentChange > -10)
+    ) {
+      change = "0" + change;
+    }
+    const sign = isProfit ? "+" : "";
+    return sign + change;
+  };
+
   const handleOpenDialog = () => setIsDialogOpen(true);
   const handleCloseDialog = () => setIsDialogOpen(false);
   const handleConfirmDelete = () => {
@@ -102,6 +126,7 @@ export default function PortfolioAnalysisCard({
       <Card
         sx={{
           height: "100%",
+          width: "100%",
           display: "flex",
           flexDirection: "column",
           bgcolor: "#1e293b",
@@ -196,7 +221,7 @@ export default function PortfolioAnalysisCard({
                 Initial Inv.
               </Typography>
               <Typography variant="body2" fontWeight="bold">
-                {currencyFormatter.format(initial)}
+                {formatCurrency(initial)}
               </Typography>
             </Grid>
             <Grid item xs={4} sx={{ borderLeft: "1px solid #334155", pl: 2 }}>
@@ -207,7 +232,7 @@ export default function PortfolioAnalysisCard({
                 Current Value
               </Typography>
               <Typography variant="body2" fontWeight="bold">
-                {currencyFormatter.format(current)}
+                {formatCurrency(current)}
               </Typography>
             </Grid>
             <Grid item xs={4} sx={{ borderLeft: "1px solid #334155", pl: 2 }}>
@@ -230,8 +255,7 @@ export default function PortfolioAnalysisCard({
                   <TrendingDownIcon sx={{ fontSize: 16 }} />
                 )}
                 <Typography variant="body2" fontWeight="bold" sx={{ ml: 0.5 }}>
-                  {isProfit ? "+" : ""}
-                  {percentChange}%
+                  {formatChange(isProfit, percentChange)}
                 </Typography>
               </Box>
             </Grid>
