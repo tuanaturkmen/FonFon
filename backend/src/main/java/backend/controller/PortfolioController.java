@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import backend.frontendModels.PortfolioForUI;
-import backend.frontendModels.PortfolioValuePointForUI;
+import backend.frontendModels.PortfolioValuesResponseForUI;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest;
 import backend.service.dataService.PortfolioService;
 
@@ -65,15 +65,19 @@ public class PortfolioController {
 	// Get values of a portfolio over a date range
 	// /user/{userId}/{portfolioId}/values?startDate=2025-11-17&endDate=2025-11-19
 	@GetMapping("/user/{userId}/{portfolioId}/values")
-	public ResponseEntity<List<PortfolioValuePointForUI>> getPortfolioValuesOverDate(@PathVariable Long userId,
+	public ResponseEntity<PortfolioValuesResponseForUI> getPortfolioValuesOverDate(@PathVariable Long userId,
 			@PathVariable Long portfolioId,
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-		List<PortfolioValuePointForUI> values = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
+//		List<PortfolioValuePointForUI> values = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
+//				startDate, endDate);
+//		return ResponseEntity.ok(values);
+
+		PortfolioValuesResponseForUI response = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
 				startDate, endDate);
 
-		return ResponseEntity.ok(values);
+		return ResponseEntity.ok(response);
 	}
 
 	// PUT /portfolios/7
