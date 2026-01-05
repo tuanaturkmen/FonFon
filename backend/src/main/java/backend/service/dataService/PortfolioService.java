@@ -13,9 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import backend.frontendModels.FundChangeSummaryForUI;
 import backend.frontendModels.PortfolioForUI;
 import backend.frontendModels.PortfolioForUI.PortfolioFundForUI;
 import backend.frontendModels.PortfolioValuePointForUI;
+import backend.frontendModels.PortfolioValuesResponseForUI;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest.FundAllocationRequest;
 import backend.service.dataService.entity.Fund;
@@ -188,7 +190,7 @@ public class PortfolioService {
 		portfolioRepository.delete(portfolio);
 	}
 
-	public List<PortfolioValuePointForUI> getPortfolioValuesOverDateRange(Long userId, Long portfolioId,
+	public PortfolioValuesResponseForUI getPortfolioValuesOverDateRange(Long userId, Long portfolioId,
 			LocalDate startDate, LocalDate endDate) {
 
 		if (endDate.isBefore(startDate)) {
@@ -205,12 +207,16 @@ public class PortfolioService {
 
 		List<PortfolioFund> pfList = portfolio.getFunds();
 		if (pfList == null || pfList.isEmpty()) {
-			return Collections.emptyList();
+			PortfolioValuesResponseForUI empty = new PortfolioValuesResponseForUI();
+			empty.setPoints(Collections.emptyList());
+			empty.setFundChanges(Collections.emptyList());
+			return empty;
 		}
 
 		// 2️⃣ Map<LocalDate, BigDecimal> to accumulate total value per date
 		// Use TreeMap to keep keys sorted by date
 		Map<LocalDate, BigDecimal> totalsByDate = new TreeMap<>();
+		List<FundChangeSummaryForUI> fundChanges = new ArrayList<>();
 
 		for (PortfolioFund pf : pfList) {
 			Fund fund = pf.getFund();
@@ -222,6 +228,10 @@ public class PortfolioService {
 
 			// Get all prices for this fund in the date range
 			List<FundPrice> prices = fundPriceRepository.findByFundAndDateBetweenOrderByDate(fund, startDate, endDate);
+			if (prices == null || prices.isEmpty()) {
+				// no price data for this fund in that range -> skip for both totals & change
+				continue;
+			}
 
 			for (FundPrice fp : prices) {
 				if (fp.getPrice() == null) {
@@ -233,19 +243,44 @@ public class PortfolioService {
 
 				totalsByDate.merge(date, contribution, BigDecimal::add);
 			}
+
+			FundPrice startFp = prices.get(0);
+			FundPrice endFp = prices.get(prices.size() - 1);
+
+			BigDecimal startPrice = startFp.getPrice();
+			BigDecimal endPrice = endFp.getPrice();
+
+			if (startPrice == null || endPrice == null || startPrice.compareTo(BigDecimal.ZERO) == 0) {
+				// can't compute change safely
+				continue;
+			}
+
+			BigDecimal percentChange = endPrice.subtract(startPrice) // Δ = end - start
+					.divide(startPrice, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)); // in %
+
+			FundChangeSummaryForUI changeDto = new FundChangeSummaryForUI();
+			changeDto.setFundCode(fund.getCode());
+			changeDto.setAllocationPercent(pf.getAllocationPercent());
+			changeDto.setPercentChange(percentChange);
+
+			fundChanges.add(changeDto);
 		}
 
 		// 3️⃣ Convert the map into a sorted list of DTOs
-		List<PortfolioValuePointForUI> result = new ArrayList<>();
+		List<PortfolioValuePointForUI> points = new ArrayList<>();
 
 		for (Map.Entry<LocalDate, BigDecimal> entry : totalsByDate.entrySet()) {
 			PortfolioValuePointForUI dto = new PortfolioValuePointForUI();
 			dto.setDate(entry.getKey());
 			dto.setTotalValue(entry.getValue());
-			result.add(dto);
+			points.add(dto);
 		}
 
-		return result;
+		PortfolioValuesResponseForUI response = new PortfolioValuesResponseForUI();
+		response.setPoints(points);
+		response.setFundChanges(fundChanges);
+
+		return response;
 	}
 
 	@Transactional
