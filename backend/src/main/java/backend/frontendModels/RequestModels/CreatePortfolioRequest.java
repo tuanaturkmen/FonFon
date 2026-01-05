@@ -9,7 +9,6 @@ import lombok.Data;
 @Data
 public class CreatePortfolioRequest {
 
-	private Long userId;
 	private String name;
 	private BigDecimal totalAmount; // total money to invest
 	private LocalDate creationTime;

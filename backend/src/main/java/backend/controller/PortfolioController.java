@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import backend.common.CurrentUser;
 import backend.frontendModels.PortfolioForUI;
 import backend.frontendModels.PortfolioValuesResponseForUI;
 import backend.frontendModels.RequestModels.CreatePortfolioRequest;
@@ -43,37 +44,38 @@ public class PortfolioController {
 //}
 	@PostMapping
 	public ResponseEntity<PortfolioForUI> createPortfolio(@RequestBody CreatePortfolioRequest request) {
-		PortfolioForUI created = portfolioService.createPortfolio(request);
+		Long userId = CurrentUser.id();
+		PortfolioForUI created = portfolioService.createPortfolio(request, userId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(created);
 	}
 
 	// Get all portfolios of a user
-	@GetMapping("/user/{userId}")
-	public ResponseEntity<List<PortfolioForUI>> getPortfoliosByUser(@PathVariable Long userId) {
+	@GetMapping("/user/me")
+	public ResponseEntity<List<PortfolioForUI>> getPortfoliosByUser() {
+		Long userId = CurrentUser.id();
 		List<PortfolioForUI> portfolios = portfolioService.getPortfoliosByUser(userId);
 		return ResponseEntity.ok(portfolios);
 	}
 
 	// Delete specific portfolio of a user
-	@DeleteMapping("/user/{userId}/{portfolioId}")
-	public ResponseEntity<Void> deletePortfolio(@PathVariable Long userId, @PathVariable Long portfolioId) {
+	@DeleteMapping("/user/me/{portfolioId}")
+	public ResponseEntity<Void> deletePortfolio(@PathVariable Long portfolioId) {
 
+		Long userId = CurrentUser.id();
 		portfolioService.deletePortfolio(userId, portfolioId);
 		return ResponseEntity.noContent().build(); // HTTP 204
 	}
 
 	// Get values of a portfolio over a date range
 	// /user/{userId}/{portfolioId}/values?startDate=2025-11-17&endDate=2025-11-19
-	@GetMapping("/user/{userId}/{portfolioId}/values")
-	public ResponseEntity<PortfolioValuesResponseForUI> getPortfolioValuesOverDate(@PathVariable Long userId,
-			@PathVariable Long portfolioId,
+
+	@GetMapping("/user/me/{portfolioId}/values")
+	public ResponseEntity<PortfolioValuesResponseForUI> getPortfolioValuesOverDate(@PathVariable Long portfolioId,
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-		PortfolioValuesResponseForUI response = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
-				startDate, endDate);
-
-		return ResponseEntity.ok(response);
+      Long userId = CurrentUser.id();
+		  PortfolioValuesResponseForUI response = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId, startDate, endDate);
+      return ResponseEntity.ok(response);
 	}
 
 	// PUT /portfolios/7
@@ -91,8 +93,8 @@ public class PortfolioController {
 	@PutMapping("/{portfolioId}")
 	public ResponseEntity<PortfolioForUI> updatePortfolio(@PathVariable Long portfolioId,
 			@RequestBody CreatePortfolioRequest request) {
-
-		PortfolioForUI updated = portfolioService.updatePortfolio(portfolioId, request);
+		Long userId = CurrentUser.id();
+		PortfolioForUI updated = portfolioService.updatePortfolio(portfolioId, request, userId);
 		return ResponseEntity.ok(updated);
 	}
 
