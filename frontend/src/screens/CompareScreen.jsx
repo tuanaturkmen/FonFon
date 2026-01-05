@@ -27,46 +27,16 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LabelList,
 } from "recharts";
 import dayjs from "dayjs";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-
-// --- Dummy Data ---
-const DUMMY_PORTFOLIOS = [
-  {
-    id: 1,
-    name: "Aggressive Growth Portfolio",
-    totalAmount: 125500.0,
-    return: "+15.75%",
-    gain: "+₺19,766.25",
-    color: "#2979ff",
-    funds: [
-      { fundCode: "VOO", allocationPercent: 25, perf: "+18.2%" },
-      { fundCode: "IWM", allocationPercent: 20, perf: "+12.5%" },
-      { fundCode: "QQQ", allocationPercent: 20, perf: "+22.1%" },
-      { fundCode: "GLD", allocationPercent: 15, perf: "-2.4%" },
-      { fundCode: "BND", allocationPercent: 10, perf: "+1.8%" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Conservative Bond Mix",
-    totalAmount: 98200.0,
-    return: "+4.25%",
-    gain: "+₺4,173.50",
-    color: "#f50057",
-    funds: [
-      { fundCode: "BND", allocationPercent: 40, perf: "+1.8%" },
-      { fundCode: "AGG", allocationPercent: 30, perf: "+2.1%" },
-      { fundCode: "TIP", allocationPercent: 20, perf: "-0.5%" },
-      { fundCode: "SHY", allocationPercent: 10, perf: "+0.9%" },
-    ],
-  },
-];
+import {
+  getPortfolios,
+  getPortfolioHistory,
+} from "../services/PortfolioService";
 
 const darkTheme = createTheme({
   palette: {
@@ -150,14 +120,35 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function PortfolioComparisonScreen() {
-  const [leftId, setLeftId] = useState(1);
-  const [rightId, setRightId] = useState(2);
+  const [portfolios, setPortfolios] = useState([]);
+
+  const [leftPortfolio, setLeftPortfolio] = useState(null);
+  const [leftPortfolioHistory, setLeftPortfolioHistory] = useState(null);
+  const [leftPortfolioValues, setLeftPortfolioValues] = useState(null);
+
+  const [rightPortfolio, setRightPortfolio] = useState(null);
+  const [rightPortfolioHistory, setRighttPortfolioHistory] = useState(null);
+  const [rightPortfolioValues, setRightPortfolioValues] = useState(null);
 
   const [startDate, setStartDate] = useState("2025-10-15");
   const [endDate, setEndDate] = useState("2025-12-25");
+  const [ready, setReady] = useState(false);
 
-  const leftPortfolio = DUMMY_PORTFOLIOS.find((p) => p.id === leftId);
-  const rightPortfolio = DUMMY_PORTFOLIOS.find((p) => p.id === rightId);
+  useEffect(() => {
+    loadPortfolios();
+  }, []);
+
+  const loadPortfolios = async () => {
+    try {
+      const data = await getPortfolios(1);
+      setTimeout(() => {
+        setReady(true);
+      }, 2000);
+      setPortfolios(data);
+    } catch (error) {
+      showToast("Error loading portfolios", "error");
+    }
+  };
 
   const shouldDisableDate = (date) => {
     const startDate = dayjs("2025-10-15");
@@ -166,9 +157,82 @@ export default function PortfolioComparisonScreen() {
     return !date.isBetween(startDate, endDate, "day", "[]");
   };
 
-  const handleCalculate = async () => {};
+  const handleSelecterChange = async (isLeft, selectedId) => {
+    const selectedPortfolio = portfolios.find(
+      (portfolio) => portfolio.id == selectedId
+    );
+    const data = await getPortfolioHistory(
+      1,
+      selectedPortfolio.id,
+      startDate,
+      endDate
+    );
+    if (isLeft) {
+      setLeftPortfolio(selectedPortfolio);
+      setLeftPortfolioHistory(data);
+      setLeftPortfolioValues({
+        startValue: data.points.at(0).totalValue,
+        endValue: data.points.at(-1).totalValue,
+      });
+    } else {
+      setRightPortfolio(selectedPortfolio);
+      setRighttPortfolioHistory(data);
+      setRightPortfolioValues({
+        startValue: data.points.at(0).totalValue,
+        endValue: data.points.at(-1).totalValue,
+      });
+    }
+  };
 
-  const renderPortfolioColumn = (portfolio, label, isLeft) => (
+  const handleCalculate = async () => {
+    const leftPortfolioData = await getPortfolioHistory(
+      1,
+      leftPortfolio.id,
+      startDate,
+      endDate
+    );
+
+    setLeftPortfolioHistory(leftPortfolioData);
+    setLeftPortfolioValues({
+      startValue: leftPortfolioData.points.at(0).totalValue,
+      endValue: leftPortfolioData.points.at(-1).totalValue,
+    });
+
+    const rightPortfolioData = await getPortfolioHistory(
+      1,
+      rightPortfolio.id,
+      startDate,
+      endDate
+    );
+
+    setRighttPortfolioHistory(rightPortfolioData);
+    setRightPortfolioValues({
+      startValue: rightPortfolioData.points.at(0).totalValue,
+      endValue: rightPortfolioData.points.at(-1).totalValue,
+    });
+  };
+
+  const getChartData = () => {
+    if (!leftPortfolioHistory || !rightPortfolioHistory) {
+      return [];
+    }
+
+    const combinedData = leftPortfolioHistory.points.map((leftData) => {
+      const rightData = rightPortfolioHistory.points.find(
+        (rightData) => rightData.date === leftData.date
+      );
+
+      return {
+        date: leftData.date,
+        valueLeft: leftData.totalValue,
+        valueRight: rightData ? rightData.totalValue : 0,
+      };
+    });
+
+    return combinedData;
+  };
+
+  const renderPortfolioColumn = (portfolio, history, values, label, isLeft) => (
     <Box sx={{ flex: 1 }}>
       <Typography
         variant="caption"
@@ -180,9 +244,7 @@ export default function PortfolioComparisonScreen() {
       <FormControl fullWidth size="small" sx={{ mb: 3 }}>
         <Select
           value={portfolio?.id || ""}
-          onChange={(e) =>
-            isLeft ? setLeftId(e.target.value) : setRightId(e.target.value)
-          }
+          onChange={(e) => handleSelecterChange(isLeft, e.target.value)}
           sx={{
             bgcolor: "#1e293b",
             color: "white",
@@ -191,7 +253,7 @@ export default function PortfolioComparisonScreen() {
             "& .MuiOutlinedInput-notchedOutline": { borderColor: "#334155" },
           }}
         >
-          {DUMMY_PORTFOLIOS.map((p) => (
+          {portfolios.map((p) => (
             <MenuItem key={p.id} value={p.id}>
               {p.name}
             </MenuItem>
@@ -215,10 +277,10 @@ export default function PortfolioComparisonScreen() {
               }}
             >
               <Typography variant="caption" color="#64748b">
-                Total Investment
+                Initial Investment
               </Typography>
               <Typography variant="h6" fontWeight={700} color="white">
-                ₺{portfolio?.totalAmount.toLocaleString("tr-TR")}
+                {portfolio?.totalAmount.toLocaleString("tr-TR")}
               </Typography>
             </Paper>
           </Grid>
@@ -232,10 +294,27 @@ export default function PortfolioComparisonScreen() {
               }}
             >
               <Typography variant="caption" color="#64748b">
-                Overall Return
+                Start Date Value
               </Typography>
-              <Typography variant="h6" fontWeight={700} color="#00e676">
-                {portfolio?.return}
+              <Typography variant="h6" fontWeight={700} color="white">
+                {values?.startValue?.toLocaleString("tr-TR")}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={6} sx={{ flex: 1 }}>
+            <Paper
+              sx={{
+                p: 2,
+                bgcolor: "#1e293b",
+                border: "1px solid #334155",
+                borderRadius: 3,
+              }}
+            >
+              <Typography variant="caption" color="#64748b">
+                End Date Value
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="white">
+                {values?.endValue?.toLocaleString("tr-TR")}
               </Typography>
             </Paper>
           </Grid>
@@ -253,7 +332,9 @@ export default function PortfolioComparisonScreen() {
             Overall Gain/Loss
           </Typography>
           <Typography variant="h6" fontWeight={700} color="white">
-            {portfolio?.gain}
+            {(values?.endValue - portfolio?.totalAmount).toLocaleString(
+              "tr-TR"
+            )}
           </Typography>
         </Paper>
 
@@ -292,7 +373,7 @@ export default function PortfolioComparisonScreen() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {portfolio?.funds.map((fund) => (
+              {history?.fundChanges.map((fund) => (
                 <TableRow key={fund.fundCode}>
                   <TableCell
                     sx={{ color: "white", borderBottom: "1px solid #334155" }}
@@ -306,13 +387,15 @@ export default function PortfolioComparisonScreen() {
                   </TableCell>
                   <TableCell
                     sx={{
-                      color: fund.perf.startsWith("+") ? "#00e676" : "#ff1744",
+                      color: fund.percentChange >= 0 ? "#00e676" : "#ff1744",
                       borderBottom: "1px solid #334155",
                       fontWeight: 600,
                     }}
                     align="right"
                   >
-                    {fund.perf}
+                    {fund.percentChange >= 0
+                      ? "+" + fund.percentChange
+                      : fund.percentChange}
                   </TableCell>
                 </TableRow>
               ))}
@@ -430,8 +513,20 @@ export default function PortfolioComparisonScreen() {
               spacing={4}
               sx={{ mb: 6 }}
             >
-              {renderPortfolioColumn(leftPortfolio, "PORTFOLIO A", true)}
-              {renderPortfolioColumn(rightPortfolio, "PORTFOLIO B", false)}
+              {renderPortfolioColumn(
+                leftPortfolio,
+                leftPortfolioHistory,
+                leftPortfolioValues,
+                "PORTFOLIO A",
+                true
+              )}
+              {renderPortfolioColumn(
+                rightPortfolio,
+                rightPortfolioHistory,
+                rightPortfolioValues,
+                "PORTFOLIO B",
+                false
+              )}
             </Stack>
 
             <Paper
@@ -487,7 +582,7 @@ export default function PortfolioComparisonScreen() {
 
               <Box height={400}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={DUMMY_CHART_DATA}>
+                  <LineChart data={getChartData()}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
@@ -511,7 +606,7 @@ export default function PortfolioComparisonScreen() {
                     <Line
                       name={leftPortfolio?.name || "Portfolio A"}
                       type="monotone"
-                      dataKey="valA" // Matches DUMMY_CHART_DATA
+                      dataKey="valueLeft"
                       stroke="#2979ff"
                       strokeWidth={3}
                       dot={false}
@@ -521,7 +616,7 @@ export default function PortfolioComparisonScreen() {
                     <Line
                       name={rightPortfolio?.name || "Portfolio B"}
                       type="monotone"
-                      dataKey="valB" // Matches DUMMY_CHART_DATA
+                      dataKey="valueRight"
                       stroke="#f50057"
                       strokeWidth={3}
                       dot={false}
