@@ -70,10 +70,6 @@ public class PortfolioController {
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-//		List<PortfolioValuePointForUI> values = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
-//				startDate, endDate);
-//		return ResponseEntity.ok(values);
-
 		PortfolioValuesResponseForUI response = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
 				startDate, endDate);
 
