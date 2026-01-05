@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -18,6 +18,7 @@ import {
   BalanceOutlined,
 } from "@mui/icons-material";
 import DonutSmallIcon from "@mui/icons-material/DonutSmall";
+import Login from "../components/Login";
 
 const darkTheme = createTheme({
   palette: {
@@ -41,7 +42,13 @@ const darkTheme = createTheme({
   },
 });
 
-const LandingPage = ({ handleStart }) => {
+const LandingPage = ({ handleStart, onLogin }) => {
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  const handleLoginClose = () => {
+    setLoginOpen(false);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
@@ -121,6 +128,9 @@ const LandingPage = ({ handleStart }) => {
                     borderRadius: 2,
                     bgcolor: "#1E262F",
                     "&:hover": { bgcolor: "#2A3440" },
+                  }}
+                  onClick={() => {
+                    setLoginOpen(true);
                   }}
                 >
                   Sign Up Free
@@ -304,6 +314,11 @@ const LandingPage = ({ handleStart }) => {
           </Container>
         </Box>
       </Box>
+      <Login
+        open={loginOpen}
+        handleClose={handleLoginClose}
+        onLogin={onLogin}
+      ></Login>
     </ThemeProvider>
   );
 };
