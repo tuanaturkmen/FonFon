@@ -29,8 +29,8 @@ public class SecurityConfig {
 				}) // we’ll add CORS bean in step 3
 				.exceptionHandling(eh -> eh
 						.authenticationEntryPoint((req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
-				.authorizeHttpRequests(
-						auth -> auth.requestMatchers("/api/auth/**", "/error").permitAll().anyRequest().authenticated())
+				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**", "/api/funds", "/error").permitAll()
+						.anyRequest().authenticated())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
