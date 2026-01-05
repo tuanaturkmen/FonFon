@@ -469,6 +469,7 @@ export default function PortfolioCreator({
 
                     const payload = {
                       userId: 1,
+                      portfolioId: portfolio ? portfolio.id : 1,
                       name: portfolioName,
                       totalAmount: parseFloat(totalAmount),
                       creationTime: creationDate,

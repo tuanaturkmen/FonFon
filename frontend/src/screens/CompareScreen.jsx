@@ -1,0 +1,538 @@
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  MenuItem,
+  Select,
+  FormControl,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  createTheme,
+  ThemeProvider,
+} from "@mui/material";
+import {
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LabelList,
+} from "recharts";
+import dayjs from "dayjs";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
+// --- Dummy Data ---
+const DUMMY_PORTFOLIOS = [
+  {
+    id: 1,
+    name: "Aggressive Growth Portfolio",
+    totalAmount: 125500.0,
+    return: "+15.75%",
+    gain: "+₺19,766.25",
+    color: "#2979ff",
+    funds: [
+      { fundCode: "VOO", allocationPercent: 25, perf: "+18.2%" },
+      { fundCode: "IWM", allocationPercent: 20, perf: "+12.5%" },
+      { fundCode: "QQQ", allocationPercent: 20, perf: "+22.1%" },
+      { fundCode: "GLD", allocationPercent: 15, perf: "-2.4%" },
+      { fundCode: "BND", allocationPercent: 10, perf: "+1.8%" },
+    ],
+  },
+  {
+    id: 2,
+    name: "Conservative Bond Mix",
+    totalAmount: 98200.0,
+    return: "+4.25%",
+    gain: "+₺4,173.50",
+    color: "#f50057",
+    funds: [
+      { fundCode: "BND", allocationPercent: 40, perf: "+1.8%" },
+      { fundCode: "AGG", allocationPercent: 30, perf: "+2.1%" },
+      { fundCode: "TIP", allocationPercent: 20, perf: "-0.5%" },
+      { fundCode: "SHY", allocationPercent: 10, perf: "+0.9%" },
+    ],
+  },
+];
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    primary: { main: "#2979ff" },
+    background: { default: "#0c1119", paper: "#131b28" },
+    text: { primary: "#ffffff", secondary: "#94a3b8" },
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h5: { fontWeight: 700 },
+    h6: { fontWeight: 600 },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: "none",
+          borderRadius: 12,
+          border: "1px solid #1e293b",
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: { textTransform: "none", borderRadius: 8, fontWeight: 600 },
+      },
+    },
+  },
+});
+
+const DUMMY_CHART_DATA = [
+  { date: "2025-01-01", valA: 110000, valB: 98000 },
+  { date: "2025-02-01", valA: 115000, valB: 98500 },
+  { date: "2025-03-01", valA: 113000, valB: 99000 },
+  { date: "2025-04-01", valA: 122000, valB: 99200 },
+  { date: "2025-05-01", valA: 120000, valB: 100000 },
+  { date: "2025-06-01", valA: 128000, valB: 100500 },
+  { date: "2025-07-01", valA: 135000, valB: 101000 },
+  { date: "2025-08-01", valA: 142000, valB: 102000 },
+  { date: "2025-09-01", valA: 138000, valB: 102500 },
+  { date: "2025-10-01", valA: 145000, valB: 103000 },
+  { date: "2025-11-01", valA: 148000, valB: 103500 },
+  { date: "2025-12-01", valA: 155000, valB: 104500 },
+];
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "#131b28",
+          border: "1px solid #1e293b",
+          p: 1.5,
+          borderRadius: 2,
+          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{ color: "#94a3b8", display: "block", mb: 0.5 }}
+        >
+          {dayjs(label).format("DD MMMM YYYY")}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: "#2979ff", fontWeight: "bold" }}
+        >
+          Value: {payload[0].value.toLocaleString("tr-TR")} ₺
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ color: "#f50057", fontWeight: "bold" }}
+        >
+          Value: {payload[1].value.toLocaleString("tr-TR")} ₺
+        </Typography>
+      </Box>
+    );
+  }
+  return null;
+};
+
+export default function PortfolioComparisonScreen() {
+  const [leftId, setLeftId] = useState(1);
+  const [rightId, setRightId] = useState(2);
+
+  const [startDate, setStartDate] = useState("2025-10-15");
+  const [endDate, setEndDate] = useState("2025-12-25");
+
+  const leftPortfolio = DUMMY_PORTFOLIOS.find((p) => p.id === leftId);
+  const rightPortfolio = DUMMY_PORTFOLIOS.find((p) => p.id === rightId);
+
+  const shouldDisableDate = (date) => {
+    const startDate = dayjs("2025-10-15");
+    const endDate = dayjs("2025-12-25");
+
+    return !date.isBetween(startDate, endDate, "day", "[]");
+  };
+
+  const handleCalculate = async () => {};
+
+  const renderPortfolioColumn = (portfolio, label, isLeft) => (
+    <Box sx={{ flex: 1 }}>
+      <Typography
+        variant="caption"
+        sx={{ color: "#64748b", fontWeight: 700, mb: 1, display: "block" }}
+      >
+        {label}
+      </Typography>
+
+      <FormControl fullWidth size="small" sx={{ mb: 3 }}>
+        <Select
+          value={portfolio?.id || ""}
+          onChange={(e) =>
+            isLeft ? setLeftId(e.target.value) : setRightId(e.target.value)
+          }
+          sx={{
+            bgcolor: "#1e293b",
+            color: "white",
+            borderRadius: 2,
+            fontWeight: "bold",
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: "#334155" },
+          }}
+        >
+          {DUMMY_PORTFOLIOS.map((p) => (
+            <MenuItem key={p.id} value={p.id}>
+              {p.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <Stack spacing={2}>
+        <Typography variant="h5" fontWeight={700} color="white">
+          {portfolio?.name}
+        </Typography>
+
+        <Grid container spacing={2} sx={{ display: "flex" }}>
+          <Grid item xs={6} sx={{ flex: 1 }}>
+            <Paper
+              sx={{
+                p: 2,
+                bgcolor: "#1e293b",
+                border: "1px solid #334155",
+                borderRadius: 3,
+              }}
+            >
+              <Typography variant="caption" color="#64748b">
+                Total Investment
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="white">
+                ₺{portfolio?.totalAmount.toLocaleString("tr-TR")}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={6} sx={{ flex: 1 }}>
+            <Paper
+              sx={{
+                p: 2,
+                bgcolor: "#1e293b",
+                border: "1px solid #334155",
+                borderRadius: 3,
+              }}
+            >
+              <Typography variant="caption" color="#64748b">
+                Overall Return
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="#00e676">
+                {portfolio?.return}
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <Paper
+          sx={{
+            p: 2,
+            bgcolor: "#1e293b",
+            border: "1px solid #334155",
+            borderRadius: 3,
+          }}
+        >
+          <Typography variant="caption" color="#64748b">
+            Overall Gain/Loss
+          </Typography>
+          <Typography variant="h6" fontWeight={700} color="white">
+            {portfolio?.gain}
+          </Typography>
+        </Paper>
+
+        <TableContainer
+          component={Paper}
+          sx={{
+            bgcolor: "#1e293b",
+            borderRadius: 3,
+            border: "1px solid #334155",
+          }}
+        >
+          <Box sx={{ p: 2, borderBottom: "1px solid #334155" }}>
+            <Typography variant="subtitle2" fontWeight={700} color="white">
+              Funds Breakdown
+            </Typography>
+          </Box>
+          <Table size="small">
+            <TableHead sx={{ bgcolor: "#111827" }}>
+              <TableRow>
+                <TableCell
+                  sx={{ color: "#64748b", border: 0, fontWeight: "bold" }}
+                >
+                  CODE
+                </TableCell>
+                <TableCell
+                  sx={{ color: "#64748b", border: 0, fontWeight: "bold" }}
+                >
+                  ALLOC.
+                </TableCell>
+                <TableCell
+                  sx={{ color: "#64748b", border: 0, fontWeight: "bold" }}
+                  align="right"
+                >
+                  PERF.
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {portfolio?.funds.map((fund) => (
+                <TableRow key={fund.fundCode}>
+                  <TableCell
+                    sx={{ color: "white", borderBottom: "1px solid #334155" }}
+                  >
+                    {fund.fundCode}
+                  </TableCell>
+                  <TableCell
+                    sx={{ color: "#94a3b8", borderBottom: "1px solid #334155" }}
+                  >
+                    {fund.allocationPercent}%
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      color: fund.perf.startsWith("+") ? "#00e676" : "#ff1744",
+                      borderBottom: "1px solid #334155",
+                      fontWeight: 600,
+                    }}
+                    align="right"
+                  >
+                    {fund.perf}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Stack>
+    </Box>
+  );
+
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Box
+          sx={{ bgcolor: "#0f172a", minHeight: "100vh", py: 4, color: "white" }}
+        >
+          <Container maxWidth="xl">
+            <Typography variant="h6" fontWeight={700}>
+              Performance Comparison
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#64748b", mb: 4 }}>
+              Compare performance and composition of your portfolios
+              side-by-side.
+            </Typography>
+
+            <Paper sx={{ p: 3, bgcolor: "#1e293b", mb: 4 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ color: "white", fontWeight: 600, mb: 3 }}
+              >
+                Calculate Performance
+              </Typography>
+              <Grid container spacing={3} alignItems="flex-end">
+                <Grid item xs={12} sm={4}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#94a3b8",
+                      fontWeight: 700,
+                      display: "block",
+                      mb: 1,
+                      ml: 0.5,
+                    }}
+                  >
+                    START DATE
+                  </Typography>
+                  <DatePicker
+                    value={dayjs(startDate)}
+                    onChange={(newValue) =>
+                      setStartDate(newValue?.format("YYYY-MM-DD"))
+                    }
+                    shouldDisableDate={shouldDisableDate}
+                    format="DD/MM/YYYY"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": { bgcolor: "#17202e" },
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "#94a3b8",
+                      fontWeight: 700,
+                      display: "block",
+                      mb: 1,
+                      ml: 0.5,
+                    }}
+                  >
+                    END DATE
+                  </Typography>
+                  <DatePicker
+                    value={dayjs(endDate)}
+                    onChange={(newValue) =>
+                      setEndDate(newValue?.format("YYYY-MM-DD"))
+                    }
+                    shouldDisableDate={shouldDisableDate}
+                    format="DD/MM/YYYY"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: {
+                          "& .MuiOutlinedInput-root": { bgcolor: "#17202e" },
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={handleCalculate}
+                    sx={{
+                      height: 40,
+                      bgcolor: "#2979ff",
+                      "&:hover": { bgcolor: "#1c66e6" },
+                    }}
+                  >
+                    Calculate
+                  </Button>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={4}
+              sx={{ mb: 6 }}
+            >
+              {renderPortfolioColumn(leftPortfolio, "PORTFOLIO A", true)}
+              {renderPortfolioColumn(rightPortfolio, "PORTFOLIO B", false)}
+            </Stack>
+
+            <Paper
+              sx={{
+                p: 3,
+                bgcolor: "#1e293b",
+                borderRadius: 4,
+                border: "1px solid #334155",
+              }}
+            >
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={4}
+              >
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{ color: "white" }}
+                >
+                  Performance Comparison
+                </Typography>
+                <Stack direction="row" spacing={3}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        bgcolor: "#2979ff",
+                      }}
+                    />
+                    <Typography variant="caption" color="#94a3b8">
+                      {leftPortfolio?.name}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        bgcolor: "#f50057",
+                      }}
+                    />
+                    <Typography variant="caption" color="#94a3b8">
+                      {rightPortfolio?.name}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+
+              <Box height={400}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={DUMMY_CHART_DATA}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#334155"
+                      opacity={0.4}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={{ stroke: "#475569" }}
+                      tick={{ fill: "#64748b", fontSize: 11 }}
+                      tickFormatter={(str) => dayjs(str).format("DD/MM")}
+                    />
+                    <YAxis
+                      axisLine={{ stroke: "#475569" }}
+                      tick={{ fill: "#64748b", fontSize: 11 }}
+                      domain={["auto", "auto"]}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+
+                    {/* Line for Portfolio A (Left) */}
+                    <Line
+                      name={leftPortfolio?.name || "Portfolio A"}
+                      type="monotone"
+                      dataKey="valA" // Matches DUMMY_CHART_DATA
+                      stroke="#2979ff"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+
+                    {/* Line for Portfolio B (Right) */}
+                    <Line
+                      name={rightPortfolio?.name || "Portfolio B"}
+                      type="monotone"
+                      dataKey="valB" // Matches DUMMY_CHART_DATA
+                      stroke="#f50057"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </Paper>
+          </Container>
+        </Box>
+      </LocalizationProvider>
+    </ThemeProvider>
+  );
+}

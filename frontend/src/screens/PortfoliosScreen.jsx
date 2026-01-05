@@ -115,8 +115,7 @@ export default function PortfoliosScreen() {
   const handleCreateClick = async (portfolioData) => {
     if (updatedPortfolio) {
       try {
-        const portfolioId = 1;
-        await updatePortfoilo(portfolioId, portfolioData);
+        await updatePortfoilo(portfolioData.portfolioId, portfolioData);
         setUpdatedPortfolio(null);
       } catch (error) {
         showToast("Failed to update portfolio", "error");
