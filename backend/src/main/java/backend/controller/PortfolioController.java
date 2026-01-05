@@ -73,9 +73,10 @@ public class PortfolioController {
 	public ResponseEntity<PortfolioValuesResponseForUI> getPortfolioValuesOverDate(@PathVariable Long portfolioId,
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
 			@RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-      Long userId = CurrentUser.id();
-		  PortfolioValuesResponseForUI response = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId, startDate, endDate);
-      return ResponseEntity.ok(response);
+		Long userId = CurrentUser.id();
+		PortfolioValuesResponseForUI response = portfolioService.getPortfolioValuesOverDateRange(userId, portfolioId,
+				startDate, endDate);
+		return ResponseEntity.ok(response);
 	}
 
 	// PUT /portfolios/7
@@ -96,6 +97,21 @@ public class PortfolioController {
 		Long userId = CurrentUser.id();
 		PortfolioForUI updated = portfolioService.updatePortfolio(portfolioId, request, userId);
 		return ResponseEntity.ok(updated);
+	}
+
+	// Get best-performing portfolio of current user (highest % change from creation
+	// to now)
+	@GetMapping("/user/me/best")
+	public ResponseEntity<Long> getBestPerformingPortfolioId() {
+		Long userId = CurrentUser.id();
+		Long bestId = portfolioService.getBestPerformingPortfolioId(userId);
+
+		if (bestId == null) {
+			// No portfolios or no valid data
+			return ResponseEntity.noContent().build(); // HTTP 204
+		}
+
+		return ResponseEntity.ok(bestId);
 	}
 
 }

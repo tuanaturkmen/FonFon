@@ -321,4 +321,37 @@ public class PortfolioService {
 		// Map to UI DTO (reuse your mapping logic)
 		return toDto(saved, request.getTotalAmount());
 	}
+
+	public Long getBestPerformingPortfolioId(Long userId) {
+
+		// Reuse existing mapping logic – this gives us totalAmount & currentValue
+		List<PortfolioForUI> portfolios = getPortfoliosByUser(userId);
+
+		if (portfolios == null || portfolios.isEmpty()) {
+			return null;
+		}
+
+		PortfolioForUI best = null;
+		BigDecimal bestChange = null; // percent
+
+		for (PortfolioForUI p : portfolios) {
+			BigDecimal totalAmount = p.getTotalAmount();
+			BigDecimal currentValue = p.getCurrentValue();
+
+			if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0 || currentValue == null) {
+				continue;
+			}
+
+			// (current - initial) / initial * 100
+			BigDecimal changePercent = currentValue.subtract(totalAmount).divide(totalAmount, 6, RoundingMode.HALF_UP)
+					.multiply(BigDecimal.valueOf(100));
+
+			if (best == null || changePercent.compareTo(bestChange) > 0) {
+				best = p;
+				bestChange = changePercent;
+			}
+		}
+
+		return (best != null) ? best.getId() : null;
+	}
 }
