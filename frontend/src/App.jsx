@@ -5,6 +5,7 @@ import LandingPage from "./screens/LandingScreen";
 import FundsScreen from "./screens/FundsScreen";
 import PortfoliosScreen from "./screens/PortfoliosScreen";
 import CompareScreen from "./screens/CompareScreen";
+import { sendLogout } from "./services/UserService";
 
 function App() {
   const [started, setStarted] = useState(false);
@@ -14,14 +15,20 @@ function App() {
     setStarted(true);
   };
 
-  const handleLogout = () => {
+  const onLogin = () => {
+    setStarted(true);
+  };
+
+  const handleLogout = async () => {
+    sessionStorage.removeItem("accessToken");
+    await sendLogout();
     setStarted(false);
   };
 
   return (
     <>
       {!started ? (
-        <LandingPage handleStart={handleStart}></LandingPage>
+        <LandingPage handleStart={handleStart} onLogin={onLogin}></LandingPage>
       ) : (
         <>
           <Header page={page} setPage={setPage} onLogout={handleLogout} />

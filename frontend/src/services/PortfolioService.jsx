@@ -1,33 +1,37 @@
 import axios from "axios";
 
-//  const BASE_URL = "http://192.168.1.6:8080/api";
 const BASE_URL = "https://fonfon-1045759541438.europe-west6.run.app/api";
 
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+});
+
+// Automatically attach token if it exists
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem("accessToken");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 export const getPortfolios = async (userId) => {
-  const res = await axios.get(`${BASE_URL}/portfolios/user/${userId}`);
-  console.log(res.data);
+  const res = await api.get(`/portfolios/user/me`); //${userId}
   return res.data;
 };
 
 export const createPortfolio = async (portfolioData) => {
-  const res = await axios.post(`${BASE_URL}/portfolios`, portfolioData);
-  console.log(res);
+  const res = await api.post(`/portfolios`, portfolioData);
+  return res.data;
 };
 
-export const updatePortfoilo = async (portfolioId, portfolioData) => {
-  console.log("updatePortfoio");
-  const res = await axios.put(
-    `${BASE_URL}/portfolios/${portfolioId}`,
-    portfolioData
-  );
-  console.log(res);
+export const updatePortfolio = async (portfolioId, portfolioData) => {
+  const res = await api.put(`/portfolios/${portfolioId}`, portfolioData);
+  return res.data;
 };
 
 export const deletePortfolio = async (userId, portfolioId) => {
-  const res = await axios.delete(
-    `${BASE_URL}/portfolios/user/${userId}/${portfolioId}`
-  );
-  console.log(res);
+  const res = await api.delete(`/portfolios/user/me/${portfolioId}`); // ${userId}
+  return res.data;
 };
 
 export const getPortfolioHistory = async (
@@ -36,13 +40,10 @@ export const getPortfolioHistory = async (
   startDate,
   endDate
 ) => {
-  const res = await axios.get(
-    `${BASE_URL}/portfolios/user/${userId}/${portfolioId}/values`,
+  const res = await api.get(
+    `/portfolios/user/me/${portfolioId}/values`, // ${userId}
     {
-      params: {
-        startDate: startDate,
-        endDate: endDate,
-      },
+      params: { startDate, endDate },
     }
   );
   return res.data;

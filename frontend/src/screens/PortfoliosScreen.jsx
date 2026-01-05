@@ -10,7 +10,7 @@ import {
   getPortfolios,
   createPortfolio,
   deletePortfolio,
-  updatePortfoilo,
+  updatePortfolio,
 } from "../services/PortfolioService";
 
 const darkTheme = createTheme({
@@ -96,7 +96,7 @@ export default function PortfoliosScreen() {
       const data = await getPortfolios(1);
       setTimeout(() => {
         setReady(true);
-      }, 2000);
+      }, 1000);
       setPortfolios(data);
     } catch (error) {
       showToast("Error loading portfolios", "error");
@@ -115,7 +115,7 @@ export default function PortfoliosScreen() {
   const handleCreateClick = async (portfolioData) => {
     if (updatedPortfolio) {
       try {
-        await updatePortfoilo(portfolioData.portfolioId, portfolioData);
+        await updatePortfolio(portfolioData.portfolioId, portfolioData);
         setUpdatedPortfolio(null);
       } catch (error) {
         showToast("Failed to update portfolio", "error");
