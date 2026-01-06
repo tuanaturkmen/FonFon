@@ -30,9 +30,8 @@ public class PortfolioController {
 	@Autowired
 	private PortfolioService portfolioService;
 
-//	POST/portfolios Content-Type:application/json
+//	POST/portfolios
 //	{
-//  	"userId": 1,
 //  	"name": "Deneme Portfolio",
 //  	"totalAmount": 3000,
 //  	"allocations": [
@@ -54,6 +53,7 @@ public class PortfolioController {
 	public ResponseEntity<List<PortfolioForUI>> getPortfoliosByUser() {
 		Long userId = CurrentUser.id();
 		List<PortfolioForUI> portfolios = portfolioService.getPortfoliosByUser(userId);
+
 		return ResponseEntity.ok(portfolios);
 	}
 
@@ -68,7 +68,6 @@ public class PortfolioController {
 
 	// Get values of a portfolio over a date range
 	// /user/{userId}/{portfolioId}/values?startDate=2025-11-17&endDate=2025-11-19
-
 	@GetMapping("/user/me/{portfolioId}/values")
 	public ResponseEntity<PortfolioValuesResponseForUI> getPortfolioValuesOverDate(@PathVariable Long portfolioId,
 			@RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

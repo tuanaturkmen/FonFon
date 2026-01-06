@@ -14,6 +14,7 @@ import java.util.PriorityQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import backend.exceptions.NotFoundException;
 import backend.frontendModels.FundForUI;
 import backend.frontendModels.RequestModels.FundSearchRequest;
 import backend.service.dataService.entity.Fund;
@@ -88,7 +89,7 @@ public class FundService {
 
 	public List<FundForUI> getFundForUIByCodeAndOptionalDateRange(String code, LocalDate startDate, LocalDate endDate) {
 		Fund fund = fundRepository.findByCode(code)
-				.orElseThrow(() -> new IllegalArgumentException("Fund not found with code: " + code));
+				.orElseThrow(() -> new NotFoundException("Fund not found with code: " + code));
 
 		List<FundPrice> prices;
 		if (startDate != null && endDate != null) {

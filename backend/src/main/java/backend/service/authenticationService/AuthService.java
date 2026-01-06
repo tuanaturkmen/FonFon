@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import backend.exceptions.ConflictException;
+import backend.exceptions.NotFoundException;
 import backend.exceptions.UnauthorizedException;
 import backend.frontendModels.RequestModels.LoginRequest;
 import backend.frontendModels.RequestModels.RegisterRequest;
@@ -63,10 +64,10 @@ public class AuthService {
 		if (userOpt.isEmpty())
 			userOpt = userRepo.findByUsername(req.getLogin());
 
-		User user = userOpt.orElseThrow(() -> new RuntimeException("Invalid credentials"));
+		User user = userOpt.orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
 		if (!encoder.matches(req.getPassword(), user.getPasswordHash())) {
-			throw new RuntimeException("Invalid credentials");
+			throw new UnauthorizedException("Invalid credentials");
 		}
 
 		return user;
@@ -77,16 +78,16 @@ public class AuthService {
 	}
 
 	public String createAccessTokenByUserId(Long userId) {
-		User user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+		User user = userRepo.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
 		return jwtService.generateAccessToken(user);
 	}
 
 	public User registerAndReturnUser(RegisterRequest req) {
 		if (userRepo.existsByEmail(req.getEmail())) {
-			throw new RuntimeException("Email already in use");
+			throw new ConflictException("Email already in use");
 		}
 		if (userRepo.existsByUsername(req.getUsername())) {
-			throw new RuntimeException("Username already in use");
+			throw new ConflictException("Username already in use");
 		}
 
 		User u = new User();
