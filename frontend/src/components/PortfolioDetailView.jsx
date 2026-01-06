@@ -151,19 +151,21 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
 
   useEffect(() => {
     if (open && portfolio) {
-      handleCalculate();
+      setStartDate(portfolio.creationTime);
+      handleCalculate(portfolio.creationTime);
     } else {
       setHistoryData([]);
     }
   }, [open, portfolio]);
 
-  const handleCalculate = async () => {
+  const handleCalculate = async (calcStartDate) => {
+    const effectiveStartDate = calcStartDate || startDate;
     setLoading(true);
     try {
       const [data, usdHistory, euroHistory] = await Promise.all([
-        getPortfolioHistory(1, portfolio.id, startDate, endDate),
-        getUSDHistory(initial, startDate, endDate),
-        getEUROHistory(initial, startDate, endDate),
+        getPortfolioHistory(1, portfolio.id, effectiveStartDate, endDate),
+        getUSDHistory(initial, effectiveStartDate, endDate),
+        getEUROHistory(initial, effectiveStartDate, endDate),
       ]);
 
       if (data && data.points.length > 0) {
@@ -183,7 +185,7 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
 
   const shouldDisableDate = (date) => {
     const startDate = dayjs("2025-07-01");
-    const endDate = dayjs("2026-01-05");
+    const endDate = dayjs("2026-01-06");
 
     return !date.isBetween(startDate, endDate, "day", "[]");
   };

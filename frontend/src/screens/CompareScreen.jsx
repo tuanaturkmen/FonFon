@@ -136,7 +136,7 @@ export default function PortfolioComparisonScreen() {
 
   const shouldDisableDate = (date) => {
     const startDate = dayjs("2025-07-01");
-    const endDate = dayjs("2026-01-05");
+    const endDate = dayjs("2026-01-06");
 
     return !date.isBetween(startDate, endDate, "day", "[]");
   };
