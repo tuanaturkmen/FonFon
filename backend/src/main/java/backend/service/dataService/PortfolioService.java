@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import backend.exceptions.BadRequestException;
+import backend.exceptions.NotFoundException;
 import backend.frontendModels.FundChangeSummaryForUI;
 import backend.frontendModels.PortfolioForUI;
 import backend.frontendModels.PortfolioForUI.PortfolioFundForUI;
@@ -29,7 +31,6 @@ import backend.service.dataService.repository.FundRepository;
 import backend.service.dataService.repository.PortfolioFundRepository;
 import backend.service.dataService.repository.PortfolioRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
 
 @Service
 
@@ -51,11 +52,11 @@ public class PortfolioService {
 
 		// 1) Basic validation
 		if (request.getAllocations() == null || request.getAllocations().isEmpty()) {
-			throw new IllegalArgumentException("Portfolio must have at least one fund allocation.");
+			throw new BadRequestException("Portfolio must have at least one fund allocation.");
 		}
 
 		if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-			throw new IllegalArgumentException("Total amount must be positive.");
+			throw new BadRequestException("Total amount must be positive.");
 		}
 
 		BigDecimal sum = request.getAllocations().stream().map(FundAllocationRequest::getAllocationPercent)
@@ -63,7 +64,7 @@ public class PortfolioService {
 
 		// Optional strict check: sum must be 100
 		if (sum.compareTo(BigDecimal.valueOf(100)) != 0) {
-			throw new IllegalArgumentException("Sum of allocation percentages must be 100. Current sum: " + sum);
+			throw new BadRequestException("Sum of allocation percentages must be 100. Current sum: " + sum);
 		}
 
 		// 2) Create Portfolio entity
@@ -90,17 +91,17 @@ public class PortfolioService {
 		// 3) For each allocation, compute owned_units using latest price
 		for (FundAllocationRequest alloc : request.getAllocations()) {
 
-			Fund fund = fundRepository.findByCode(alloc.getFundCode()).orElseThrow(
-					() -> new IllegalArgumentException("Fund not found with code: " + alloc.getFundCode()));
+			Fund fund = fundRepository.findByCode(alloc.getFundCode())
+					.orElseThrow(() -> new NotFoundException("Fund not found with code: " + alloc.getFundCode()));
 
 			FundPrice priceBD = fundPriceRepository
 					.findOneByCodeAndDateWithFund(fund.getCode(), request.getCreationTime())
-					.orElseThrow(() -> new IllegalArgumentException(
+					.orElseThrow(() -> new NotFoundException(
 							"No price data for fund: " + fund.getCode() + " for date " + request.getCreationTime()));
 
 			BigDecimal price = priceBD.getPrice();
 			if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-				throw new IllegalStateException(
+				throw new BadRequestException(
 						"Invalid price for fund: " + fund.getCode() + " for date " + request.getCreationTime());
 			}
 
@@ -177,11 +178,11 @@ public class PortfolioService {
 	public void deletePortfolio(Long userId, Long portfolioId) {
 		// Load the portfolio or fail with 404 style
 		Portfolio portfolio = portfolioRepository.findById(portfolioId)
-				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
+				.orElseThrow(() -> new NotFoundException("Portfolio not found: " + portfolioId));
 
 		// Safety: ensure it belongs to this user
 		if (!portfolio.getUserId().equals(userId)) {
-			throw new IllegalArgumentException("Portfolio does not belong to user: " + userId);
+			throw new BadRequestException("Portfolio does not belong to user: " + userId);
 		}
 
 		// This will also delete PortfolioFund rows because:
@@ -194,15 +195,15 @@ public class PortfolioService {
 			LocalDate startDate, LocalDate endDate) {
 
 		if (endDate.isBefore(startDate)) {
-			throw new IllegalArgumentException("endDate must not be before startDate");
+			throw new BadRequestException("endDate must not be before startDate");
 		}
 
 		// 1️⃣ Load portfolio & ensure it belongs to this user
 		Portfolio portfolio = portfolioRepository.findById(portfolioId)
-				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
+				.orElseThrow(() -> new NotFoundException("Portfolio not found: " + portfolioId));
 
 		if (!portfolio.getUserId().equals(userId)) {
-			throw new IllegalArgumentException("Portfolio does not belong to user: " + userId);
+			throw new BadRequestException("Portfolio does not belong to user: " + userId);
 		}
 
 		List<PortfolioFund> pfList = portfolio.getFunds();
@@ -288,11 +289,11 @@ public class PortfolioService {
 
 		// Load portfolio and validate user
 		Portfolio portfolio = portfolioRepository.findById(portfolioId)
-				.orElseThrow(() -> new EntityNotFoundException("Portfolio not found: " + portfolioId));
+				.orElseThrow(() -> new NotFoundException("Portfolio not found: " + portfolioId));
 
 		// Optional safety: ensure the incoming userId matches portfolio owner
 		if (!portfolio.getUserId().equals(userId)) {
-			throw new IllegalArgumentException("Portfolio does not belong to user: " + userId);
+			throw new BadRequestException("Portfolio does not belong to user: " + userId);
 		}
 
 		// Update basic fields
