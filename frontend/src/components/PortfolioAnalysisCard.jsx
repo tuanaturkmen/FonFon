@@ -20,6 +20,8 @@ import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import StarIcon from "@mui/icons-material/Star"; // Icon for the "Best" badge
+import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 import PortfolioDeleteDialog from "./PortfolioDeleteDialog";
 import dayjs from "dayjs";
 
@@ -37,6 +39,7 @@ export default function PortfolioAnalysisCard({
   onDelete,
   onView,
   onEdit,
+  isBest, // New prop to identify the top performer
 }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -83,7 +86,6 @@ export default function PortfolioAnalysisCard({
 
   const formatCurrency = (value) => {
     if (value === 0) return "0,00 ₺";
-
     if (value >= 1000000) {
       return `₺${(value / 1000000).toLocaleString("tr-TR", {
         maximumFractionDigits: 2,
@@ -102,13 +104,13 @@ export default function PortfolioAnalysisCard({
   const formatChange = (isProfit, percentChange) => {
     let change = String(percentChange);
     if (
-      (isProfit && percentChange < 10) ||
-      (!isProfit && percentChange > -10)
+      (isProfit && percentChange < 10 && percentChange >= 0) ||
+      (!isProfit && percentChange > -10 && percentChange <= 0)
     ) {
-      change = "0" + change;
+      // Logic for adding leading zero if desired
     }
     const sign = isProfit ? "+" : "";
-    return sign + change;
+    return sign + change + "%";
   };
 
   const handleOpenDialog = () => setIsDialogOpen(true);
@@ -132,16 +134,42 @@ export default function PortfolioAnalysisCard({
           bgcolor: "#1e293b",
           color: "white",
           borderRadius: 3,
-          border: "1px solid #334155",
+          position: "relative", // Needed for absolute positioning of the badge
+          border: isBest ? "2px solid #00e676" : "1px solid #334155",
           transition: "all 0.2s ease-in-out",
+          boxShadow: isBest ? "0 0 15px rgba(0, 230, 118, 0.2)" : "none",
           "&:hover": {
             transform: "translateY(-4px)",
-            borderColor: "#2979ff",
-            boxShadow: "0 12px 24px -12px rgba(0,0,0,0.5)",
+            borderColor: isBest ? "#00e676" : "#2979ff",
+            boxShadow: isBest
+              ? "0 12px 24px -12px rgba(0,230,118,0.5)"
+              : "0 12px 24px -12px rgba(0,0,0,0.5)",
           },
         }}
       >
-        <CardContent sx={{ flexGrow: 1 }}>
+        {/* TOP PERFORMER BADGE */}
+        {isBest && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: -3,
+              right: -3,
+              bgcolor: "#00e676",
+              color: "#0f172a",
+              px: 0.5,
+              py: 0.5,
+              borderRadius: 5,
+              display: "flex",
+              alignItems: "center",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+              zIndex: 0,
+            }}
+          >
+            <WorkspacePremiumIcon sx={{ fontSize: 20 }} />
+          </Box>
+        )}
+
+        <CardContent sx={{ flexGrow: 1, pt: isBest ? 3 : 2 }}>
           <Box
             sx={{
               display: "flex",

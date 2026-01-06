@@ -11,6 +11,7 @@ import {
   createPortfolio,
   deletePortfolio,
   updatePortfolio,
+  getBestPerformingPortfolio,
 } from "../services/PortfolioService";
 
 const darkTheme = createTheme({
@@ -65,6 +66,7 @@ const darkTheme = createTheme({
 
 export default function PortfoliosScreen() {
   const [portfolios, setPortfolios] = useState([]);
+  const [best, setBest] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [focusedPortfolio, setFocusedPortfolio] = useState(null);
   const [updatedPortfolio, setUpdatedPortfolio] = useState(null);
@@ -93,13 +95,19 @@ export default function PortfoliosScreen() {
 
   const loadPortfolios = async () => {
     try {
-      const data = await getPortfolios(1);
+      const [portfolios, best] = await Promise.all([
+        getPortfolios(1),
+        getBestPerformingPortfolio(),
+      ]);
+
+      setPortfolios(portfolios);
+      setBest(best);
       setTimeout(() => {
         setReady(true);
       }, 1000);
-      setPortfolios(data);
     } catch (error) {
-      showToast("Error loading portfolios", "error");
+      const errorMessage = "Error loading portfolios: " + error;
+      showToast(errorMessage, "error");
     }
   };
 
@@ -177,6 +185,7 @@ export default function PortfoliosScreen() {
             handleDeletePortfolioClick={handleDeletePortfolioClick}
             handleViewMoreClick={handleViewMoreClick}
             handleEditPortfolioClick={handleEditPortfolioClick}
+            bestPortfolioId={best}
           />
         )
       ) : (

@@ -74,21 +74,21 @@ export default function UserMenu({ onLogout }) {
           },
         }}
       >
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={handleClose} disabled={true}>
           <ListItemIcon>
             <PersonIcon fontSize="small" sx={{ color: "#9CA3AF" }} />
           </ListItemIcon>
           Profile
         </MenuItem>
 
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={handleClose} disabled={true}>
           <ListItemIcon>
             <StarIcon fontSize="small" sx={{ color: "#F59E0B" }} />
           </ListItemIcon>
           Premium
         </MenuItem>
 
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={handleClose} disabled={true}>
           <ListItemIcon>
             <EmojiEventsIcon fontSize="small" sx={{ color: "#3B82F6" }} />
           </ListItemIcon>
@@ -97,8 +97,7 @@ export default function UserMenu({ onLogout }) {
 
         <Divider sx={{ bgcolor: "#1F2937" }} />
 
-        {/* Theme Toggle - Logic to be filled later */}
-        <MenuItem onClick={(e) => e.stopPropagation()}>
+        <MenuItem onClick={(e) => e.stopPropagation()} disabled={true}>
           <ListItemIcon>
             <DarkModeIcon fontSize="small" sx={{ color: "#9CA3AF" }} />
           </ListItemIcon>
@@ -106,7 +105,7 @@ export default function UserMenu({ onLogout }) {
           <Switch size="small" edge="end" checked={true} disableRipple />
         </MenuItem>
 
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={handleClose} disabled={true}>
           <ListItemIcon>
             <Settings fontSize="small" sx={{ color: "#9CA3AF" }} />
           </ListItemIcon>

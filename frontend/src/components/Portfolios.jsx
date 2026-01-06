@@ -9,6 +9,7 @@ export default function Portfolios({
   handleDeletePortfolioClick,
   handleViewMoreClick,
   handleEditPortfolioClick,
+  bestPortfolioId,
 }) {
   return (
     <Box sx={{ p: 3 }}>
@@ -47,6 +48,7 @@ export default function Portfolios({
               onDelete={handleDeletePortfolioClick}
               onView={handleViewMoreClick}
               onEdit={handleEditPortfolioClick}
+              isBest={portfolio.id === bestPortfolioId}
             />
           </Grid>
         ))}

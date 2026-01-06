@@ -201,8 +201,8 @@ export default function PortfolioCreator({
   };
 
   const shouldDisableDate = (date) => {
-    const startDate = dayjs("2025-10-15");
-    const endDate = dayjs("2025-12-25");
+    const startDate = dayjs("2025-07-01");
+    const endDate = dayjs("2026-01-05");
 
     return !date.isBetween(startDate, endDate, "day", "[]");
   };

@@ -26,12 +26,13 @@ export default function Login({ open, handleClose, onLogin }) {
   const [authMode, setAuthMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [errors, setErrors] = useState({});
 
+  // Form States
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [user, setUser] = useState("");
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -39,21 +40,31 @@ export default function Login({ open, handleClose, onLogin }) {
     setEmail("");
     setUsername("");
     setPassword("");
+    setUser("");
     setErrors({});
     setLoading(false);
   };
 
   const validate = () => {
     let tempErrors = {};
-    if (!email) tempErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) tempErrors.email = "Email is invalid";
 
-    if (!password) tempErrors.password = "Password is required";
-    else if (password.length < 6)
+    if (authMode === "login") {
+      // Login validation logic
+      if (!user) tempErrors.user = "Username or email is required";
+    } else {
+      // Signup validation logic
+      if (!username) tempErrors.username = "Username is required";
+      if (!email) {
+        tempErrors.email = "Email is required";
+      } else if (!/\S+@\S+\.\S+/.test(email)) {
+        tempErrors.email = "Email is invalid";
+      }
+    }
+
+    if (!password) {
+      tempErrors.password = "Password is required";
+    } else if (password.length < 6) {
       tempErrors.password = "Must be at least 6 characters";
-
-    if (authMode === "signup" && !username) {
-      tempErrors.username = "Username is required";
     }
 
     setErrors(tempErrors);
@@ -66,18 +77,21 @@ export default function Login({ open, handleClose, onLogin }) {
 
     setLoading(true);
     try {
+      let accessToken;
       if (authMode === "login") {
-        const accessToken = await sendLogin(email, password);
-        sessionStorage.setItem("accessToken", accessToken);
+        // Send 'user' (which holds the login identifier)
+        accessToken = await sendLogin(user, password);
       } else {
-        const accessToken = await sendRegister(username, email, password);
-        sessionStorage.setItem("accessToken", accessToken);
+        // Send 'username' and 'email' separately for registration
+        accessToken = await sendRegister(username, email, password);
       }
+
+      sessionStorage.setItem("accessToken", accessToken);
       handleClose();
       resetForm();
       onLogin();
     } catch (err) {
-      const backendMsg = err.response?.data?.message || "Something went wrong";
+      const backendMsg = err.response?.data?.message || "Authentication failed";
       setErrors({ server: backendMsg });
     } finally {
       setLoading(false);
@@ -130,8 +144,7 @@ export default function Login({ open, handleClose, onLogin }) {
           onChange={(e, next) => {
             if (next) {
               setAuthMode(next);
-              setErrors({});
-              resetForm();
+              resetForm(); // Clear errors and fields when switching modes
             }
           }}
           fullWidth
@@ -144,22 +157,74 @@ export default function Login({ open, handleClose, onLogin }) {
         <Box
           component="form"
           onSubmit={handleSubmit}
-          noValidate // Disables browser default tooltips to use our red text
+          noValidate
           sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
         >
-          {/* Username - Only for Sign Up */}
+          {/* SIGNUP FIELDS */}
           {authMode === "signup" && (
+            <>
+              <Box>
+                <Typography variant="caption" sx={labelStyles}>
+                  USERNAME
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="metu123"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  error={!!errors.username}
+                  helperText={errors.username}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutline
+                          sx={{ color: "grey.600", fontSize: 20 }}
+                        />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={inputStyles}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={labelStyles}>
+                  EMAIL ADDRESS
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailOutlined
+                          sx={{ color: "grey.600", fontSize: 20 }}
+                        />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={inputStyles}
+                />
+              </Box>
+            </>
+          )}
+
+          {/* LOGIN FIELD */}
+          {authMode === "login" && (
             <Box>
               <Typography variant="caption" sx={labelStyles}>
-                USERNAME
+                USERNAME OR EMAIL
               </Typography>
               <TextField
                 fullWidth
-                placeholder="metu123"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                error={!!errors.username}
-                helperText={errors.username}
+                placeholder="Enter your username or email"
+                value={user}
+                onChange={(e) => setUser(e.target.value)}
+                error={!!errors.user}
+                helperText={errors.user}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -172,29 +237,7 @@ export default function Login({ open, handleClose, onLogin }) {
             </Box>
           )}
 
-          <Box>
-            <Typography variant="caption" sx={labelStyles}>
-              EMAIL ADDRESS
-            </Typography>
-            <TextField
-              fullWidth
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={!!errors.email}
-              helperText={errors.email}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailOutlined sx={{ color: "grey.600", fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={inputStyles}
-            />
-          </Box>
-
-          {/* Password */}
+          {/* PASSWORD FIELD (Common to both) */}
           <Box>
             <Typography variant="caption" sx={labelStyles}>
               PASSWORD
@@ -233,11 +276,10 @@ export default function Login({ open, handleClose, onLogin }) {
             />
           </Box>
 
-          {/* General Server Error (Optional) */}
           {errors.server && (
             <Typography
               variant="caption"
-              sx={{ color: "#f87171", textAlign: "center" }}
+              sx={{ color: "#f87171", textAlign: "center", mt: -1 }}
             >
               {errors.server}
             </Typography>
@@ -264,7 +306,7 @@ export default function Login({ open, handleClose, onLogin }) {
   );
 }
 
-// --- Styles ---
+// --- Styles (Identical to your original styles) ---
 
 const labelStyles = {
   color: "grey.500",
@@ -283,10 +325,10 @@ const inputStyles = {
     "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
     "&:hover fieldset": { borderColor: "rgba(255,255,255,0.2)" },
     "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
-    "&.Mui-error fieldset": { borderColor: "#f87171" }, // Ensures red border on error
+    "&.Mui-error fieldset": { borderColor: "#f87171" },
   },
   "& .MuiFormHelperText-root": {
-    marginLeft: 0, // Aligns helper text with the left edge of input
+    marginLeft: 0,
     color: "#f87171",
   },
 };
@@ -304,6 +346,7 @@ const toggleGroupStyles = {
     "&.Mui-selected": {
       bgcolor: "#1f2937",
       color: "#fff",
+      "&:hover": { bgcolor: "#374151" },
     },
   },
 };

@@ -7,7 +7,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Automatically attach token if it exists
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("accessToken");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -15,7 +14,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const getPortfolios = async (userId) => {
-  const res = await api.get(`/portfolios/user/me`); //${userId}
+  const res = await api.get(`/portfolios/user/me`);
   return res.data;
 };
 
@@ -30,7 +29,7 @@ export const updatePortfolio = async (portfolioId, portfolioData) => {
 };
 
 export const deletePortfolio = async (userId, portfolioId) => {
-  const res = await api.delete(`/portfolios/user/me/${portfolioId}`); // ${userId}
+  const res = await api.delete(`/portfolios/user/me/${portfolioId}`);
   return res.data;
 };
 
@@ -40,11 +39,13 @@ export const getPortfolioHistory = async (
   startDate,
   endDate
 ) => {
-  const res = await api.get(
-    `/portfolios/user/me/${portfolioId}/values`, // ${userId}
-    {
-      params: { startDate, endDate },
-    }
-  );
+  const res = await api.get(`/portfolios/user/me/${portfolioId}/values`, {
+    params: { startDate, endDate },
+  });
+  return res.data;
+};
+
+export const getBestPerformingPortfolio = async () => {
+  const res = await api.get(`/portfolios/user/me/best`);
   return res.data;
 };

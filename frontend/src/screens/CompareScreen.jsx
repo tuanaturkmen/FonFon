@@ -29,7 +29,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import dayjs from "dayjs";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -67,21 +66,6 @@ const darkTheme = createTheme({
     },
   },
 });
-
-const DUMMY_CHART_DATA = [
-  { date: "2025-01-01", valA: 110000, valB: 98000 },
-  { date: "2025-02-01", valA: 115000, valB: 98500 },
-  { date: "2025-03-01", valA: 113000, valB: 99000 },
-  { date: "2025-04-01", valA: 122000, valB: 99200 },
-  { date: "2025-05-01", valA: 120000, valB: 100000 },
-  { date: "2025-06-01", valA: 128000, valB: 100500 },
-  { date: "2025-07-01", valA: 135000, valB: 101000 },
-  { date: "2025-08-01", valA: 142000, valB: 102000 },
-  { date: "2025-09-01", valA: 138000, valB: 102500 },
-  { date: "2025-10-01", valA: 145000, valB: 103000 },
-  { date: "2025-11-01", valA: 148000, valB: 103500 },
-  { date: "2025-12-01", valA: 155000, valB: 104500 },
-];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -151,8 +135,8 @@ export default function PortfolioComparisonScreen() {
   };
 
   const shouldDisableDate = (date) => {
-    const startDate = dayjs("2025-10-15");
-    const endDate = dayjs("2025-12-25");
+    const startDate = dayjs("2025-07-01");
+    const endDate = dayjs("2026-01-05");
 
     return !date.isBetween(startDate, endDate, "day", "[]");
   };
@@ -226,6 +210,8 @@ export default function PortfolioComparisonScreen() {
         date: leftData.date,
         valueLeft: leftData.totalValue,
         valueRight: rightData ? rightData.totalValue : 0,
+        usdValue: leftData.totalValue * 0.9, // Dummy: USD tracking slightly lower
+        eurValue: leftData.totalValue * 0.85, // Dummy: EUR tracking lower
       };
     });
 
@@ -332,9 +318,11 @@ export default function PortfolioComparisonScreen() {
             Overall Gain/Loss
           </Typography>
           <Typography variant="h6" fontWeight={700} color="white">
-            {(values?.endValue - portfolio?.totalAmount).toLocaleString(
-              "tr-TR"
-            )}
+            {values?.endValue
+              ? (values?.endValue - portfolio?.totalAmount).toLocaleString(
+                  "tr-TR"
+                )
+              : ""}
           </Typography>
         </Paper>
 

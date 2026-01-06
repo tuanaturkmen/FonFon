@@ -31,11 +31,3 @@ export const getTopFunds = async () => {
   });
   return res.data;
 };
-
-export const searchFunds = async (filters) => {
-  console.log(filters);
-  const res = await axios.get(`${BASE_URL}/funds/search`, {
-    params: filters,
-  });
-  return res.data;
-};

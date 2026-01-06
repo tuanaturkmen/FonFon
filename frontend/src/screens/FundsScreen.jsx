@@ -72,7 +72,7 @@ export default function FundsScreen() {
         setTopFunds(topFunds.slice(0, 5));
         setTimeout(() => {
           setReady(true);
-        }, 1000);
+        }, 500);
       } catch (error) {
         console.error(error); // TODO: toast
       }

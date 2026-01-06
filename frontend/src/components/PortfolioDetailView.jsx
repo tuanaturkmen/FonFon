@@ -27,6 +27,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { getPortfolioHistory } from "../services/PortfolioService";
+import { getUSDHistory, getEUROHistory } from "../services/RatesService";
 
 import {
   Line,
@@ -36,10 +37,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LabelList,
 } from "recharts";
 
-// Unified Dark Theme to match PortfolioCreator
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
@@ -88,12 +87,21 @@ const CustomTooltip = ({ active, payload, label }) => {
         >
           {dayjs(label).format("DD MMMM YYYY")}
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: "#2979ff", fontWeight: "bold" }}
-        >
-          Value: {payload[0].value.toLocaleString("tr-TR")} ₺
-        </Typography>
+        {payload.map((entry, index) => {
+          let symbol = "₺";
+          if (entry.dataKey === "usdValue") symbol = "$";
+          if (entry.dataKey === "eurValue") symbol = "€";
+
+          return (
+            <Typography
+              key={index}
+              variant="body2"
+              sx={{ color: entry.color, fontWeight: "bold", mb: 0.2 }}
+            >
+              {entry.name}: {entry.value.toLocaleString("tr-TR")} {symbol}
+            </Typography>
+          );
+        })}
       </Box>
     );
   }
@@ -102,10 +110,29 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
   const [historyData, setHistoryData] = useState([]);
+  const [usdData, setUsdData] = useState([]);
+  const [euroData, setEuroData] = useState([]);
+
   const [loading, setLoading] = useState(false);
 
   const [startDate, setStartDate] = useState("2025-10-15");
   const [endDate, setEndDate] = useState("2025-12-25");
+
+  const [showUSD, setShowUSD] = useState(false);
+  const [showEUR, setShowEUR] = useState(false);
+
+  const dataWithForex = React.useMemo(() => {
+    return historyData.map((point) => {
+      const usdRateObj = usdData.find((d) => d.date === point.date);
+      const euroRateObj = euroData.find((d) => d.date === point.date);
+
+      return {
+        ...point,
+        usdValue: usdRateObj ? usdRateObj.value : null,
+        eurValue: euroRateObj ? euroRateObj.value : null,
+      };
+    });
+  }, [historyData, usdData, euroData]);
 
   const [startDateValue, setStartDateValue] = useState(0);
   const [endDateValue, setEndDateValue] = useState(0);
@@ -133,17 +160,19 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
   const handleCalculate = async () => {
     setLoading(true);
     try {
-      const data = await getPortfolioHistory(
-        1,
-        portfolio.id,
-        startDate,
-        endDate
-      );
+      const [data, usdHistory, euroHistory] = await Promise.all([
+        getPortfolioHistory(1, portfolio.id, startDate, endDate),
+        getUSDHistory(initial, startDate, endDate),
+        getEUROHistory(initial, startDate, endDate),
+      ]);
+
       if (data && data.points.length > 0) {
         setHistoryData(data.points);
         setStartDateValue(data.points.at(0).totalValue);
         setEndDateValue(data.points.at(-1).totalValue);
         setFunds(data.fundChanges);
+        setUsdData(usdHistory);
+        setEuroData(euroHistory);
       }
     } catch (error) {
       console.error(error);
@@ -153,8 +182,8 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
   };
 
   const shouldDisableDate = (date) => {
-    const startDate = dayjs("2025-10-15");
-    const endDate = dayjs("2025-12-25");
+    const startDate = dayjs("2025-07-01");
+    const endDate = dayjs("2026-01-05");
 
     return !date.isBetween(startDate, endDate, "day", "[]");
   };
@@ -332,7 +361,9 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
                             : "white",
                         }}
                       >
-                        {formatCurrency(Math.abs(item.value))} ₺
+                        {(item.isGain ? (item.value > 0 ? "+" : "-") : "") +
+                          formatCurrency(Math.abs(item.value))}{" "}
+                        ₺
                       </Typography>
                     </Paper>
                   </Grid>
@@ -341,12 +372,54 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
 
               {/* Chart Section */}
               <Paper sx={{ p: 2, bgcolor: "#131b28" }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ color: "white", fontWeight: 600, mb: 3 }}
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
                 >
-                  Value Performance
-                </Typography>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ color: "white", fontWeight: 600 }}
+                  >
+                    Value Performance
+                  </Typography>
+
+                  {/* Toggle Buttons */}
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      variant={showUSD ? "contained" : "outlined"}
+                      onClick={() => setShowUSD(!showUSD)}
+                      sx={{
+                        minWidth: "40px",
+                        fontSize: "1.1rem",
+                        py: 0,
+                        borderColor: "#1a652a",
+                        color: showUSD ? "white" : "#1a652a",
+                        "&:hover": { borderColor: "#1a652a" },
+                      }}
+                    >
+                      $
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={showEUR ? "contained" : "outlined"}
+                      onClick={() => setShowEUR(!showEUR)}
+                      sx={{
+                        minWidth: "40px",
+                        fontSize: "1.1rem",
+                        py: 0,
+                        borderColor: "#aa00ff",
+                        color: showEUR ? "white" : "#aa00ff",
+                        "&:hover": { borderColor: "#d05ce3" },
+                      }}
+                    >
+                      €
+                    </Button>
+                  </Stack>
+                </Box>
+
                 <Box height={280}>
                   {loading ? (
                     <Box
@@ -355,12 +428,12 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
                       alignItems="center"
                       height="100%"
                     >
-                      <CircularProgress size={30} sx={{ color: "#2979ff" }} />
+                      <CircularProgress size={30} />
                     </Box>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
-                        data={historyData}
+                        data={dataWithForex}
                         margin={{ top: 25, right: 30, left: -20, bottom: 0 }}
                       >
                         <CartesianGrid
@@ -371,58 +444,46 @@ export default function PortfolioDetailDrawer({ open, onClose, portfolio }) {
                         />
                         <XAxis
                           dataKey="date"
-                          axisLine={{ stroke: "#475569" }}
-                          tick={{ fill: "#64748b", fontSize: 11 }}
                           tickFormatter={(str) => dayjs(str).format("DD/MM")}
+                          tick={{ fill: "#64748b", fontSize: 11 }}
                         />
                         <YAxis
-                          axisLine={{ stroke: "#475569" }}
-                          tick={{ fill: "#64748b", fontSize: 11 }}
                           domain={["auto", "auto"]}
+                          tick={{ fill: "#64748b", fontSize: 11 }}
                         />
                         <Tooltip content={<CustomTooltip />} />
+
+                        {/* Main Portfolio Line */}
                         <Line
                           type="monotone"
                           dataKey="totalValue"
+                          name="Portfolio"
                           stroke="#2979ff"
                           strokeWidth={3}
                           dot={false}
-                        >
-                          <LabelList
-                            content={(props) => {
-                              const { x, y, index } = props;
-                              if (
-                                historyData[index].date ===
-                                portfolio.creationTime
-                              ) {
-                                return (
-                                  <g>
-                                    <circle
-                                      cx={x}
-                                      cy={y}
-                                      r={5}
-                                      fill="#2979ff"
-                                      stroke="#fff"
-                                      strokeWidth={2}
-                                    />
-                                    <text
-                                      x={x}
-                                      y={y}
-                                      dy={-15}
-                                      fill="#fff"
-                                      fontSize={12}
-                                      fontWeight="bold"
-                                      textAnchor="middle"
-                                    >
-                                      Created
-                                    </text>
-                                  </g>
-                                );
-                              }
-                              return null;
-                            }}
+                        />
+
+                        {/* Inside LineChart */}
+                        {showUSD && (
+                          <Line
+                            type="monotone"
+                            dataKey="usdValue"
+                            name="USD" // This shows up in the tooltip as "USD: 1.234 $"
+                            stroke="#1a652a"
+                            strokeWidth={3}
+                            dot={false}
                           />
-                        </Line>
+                        )}
+                        {showEUR && (
+                          <Line
+                            type="monotone"
+                            dataKey="eurValue"
+                            name="EUR" // This shows up in the tooltip as "EUR: 1.234 €"
+                            stroke="#aa00ff"
+                            strokeWidth={2}
+                            dot={false}
+                          />
+                        )}
                       </LineChart>
                     </ResponsiveContainer>
                   )}
