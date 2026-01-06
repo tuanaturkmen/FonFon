@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import backend.common.ExceptionCodeEnum;
 import backend.exceptions.BadRequestException;
-import backend.exceptions.ConflictException;
+import backend.exceptions.ConflictExceptionMail;
+import backend.exceptions.ConflictExceptionUsername;
 import backend.exceptions.NotFoundException;
 import backend.exceptions.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,9 +43,15 @@ public class ApiExceptionHandler {
 				null);
 	}
 
-	@ExceptionHandler(ConflictException.class)
-	public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex, HttpServletRequest req) {
-		return build(HttpStatus.CONFLICT, ExceptionCodeEnum.AUTH_CONFLICT.toString(), ex.getMessage(), req, null);
+	@ExceptionHandler(ConflictExceptionMail.class)
+	public ResponseEntity<Map<String, Object>> handleConflict(ConflictExceptionMail ex, HttpServletRequest req) {
+		return build(HttpStatus.CONFLICT, ExceptionCodeEnum.AUTH_CONFLICT_MAIL.toString(), ex.getMessage(), req, null);
+	}
+
+	@ExceptionHandler(ConflictExceptionUsername.class)
+	public ResponseEntity<Map<String, Object>> handleConflict(ConflictExceptionUsername ex, HttpServletRequest req) {
+		return build(HttpStatus.CONFLICT, ExceptionCodeEnum.AUTH_CONFLICT_USERNAME.toString(), ex.getMessage(), req,
+				null);
 	}
 
 	// Useful for "not yours" cases if you throw AccessDeniedException in service

@@ -5,7 +5,8 @@ import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import backend.exceptions.ConflictException;
+import backend.exceptions.ConflictExceptionMail;
+import backend.exceptions.ConflictExceptionUsername;
 import backend.exceptions.NotFoundException;
 import backend.exceptions.UnauthorizedException;
 import backend.frontendModels.RequestModels.LoginRequest;
@@ -28,10 +29,10 @@ public class AuthService {
 
 	public String register(RegisterRequest req) {
 		if (userRepo.existsByEmail(req.getEmail())) {
-			throw new ConflictException("Email already in use");
+			throw new ConflictExceptionMail("Email already in use");
 		}
 		if (userRepo.existsByUsername(req.getUsername())) {
-			throw new ConflictException("Username already in use");
+			throw new ConflictExceptionUsername("Username already in use");
 		}
 
 		User u = new User();
@@ -84,10 +85,10 @@ public class AuthService {
 
 	public User registerAndReturnUser(RegisterRequest req) {
 		if (userRepo.existsByEmail(req.getEmail())) {
-			throw new ConflictException("Email already in use");
+			throw new ConflictExceptionMail("Email already in use");
 		}
 		if (userRepo.existsByUsername(req.getUsername())) {
-			throw new ConflictException("Username already in use");
+			throw new ConflictExceptionUsername("Username already in use");
 		}
 
 		User u = new User();
