@@ -16,6 +16,7 @@ import backend.common.ExceptionCodeEnum;
 import backend.exceptions.BadRequestException;
 import backend.exceptions.ConflictExceptionMail;
 import backend.exceptions.ConflictExceptionUsername;
+import backend.exceptions.FxRateNotFoundException;
 import backend.exceptions.NotFoundException;
 import backend.exceptions.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -87,5 +88,11 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(BadRequestException.class)
 	public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex, HttpServletRequest req) {
 		return build(HttpStatus.BAD_REQUEST, ExceptionCodeEnum.BAD_REQUEST.toString(), ex.getMessage(), req, null);
+	}
+
+	@ExceptionHandler(FxRateNotFoundException.class)
+	public ResponseEntity<Map<String, Object>> handleFxRateNotFound(FxRateNotFoundException ex,
+			HttpServletRequest req) {
+		return build(HttpStatus.NOT_FOUND, ExceptionCodeEnum.NOT_FOUND.toString(), ex.getMessage(), req, null);
 	}
 }
